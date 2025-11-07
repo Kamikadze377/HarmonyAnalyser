@@ -1,0 +1,55 @@
+﻿<Window x:Class="HarmonyAnalyser.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:HarmonyAnalyser"
+        mc:Ignorable="d"
+        Title="Harmony Analyser" WindowState="Maximized">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Menu Grid.Row="0" VerticalAlignment="Top">
+            <MenuItem Header="Plik">
+                <MenuItem Header="Nowy"/>
+                <MenuItem Header="Otwórz..." Click="Otworz_Click"/>
+                <MenuItem Header="Zapisz"/>
+                <MenuItem Header="Zapisz jako..."/>
+                <Separator/>
+                <MenuItem Header="Zamknij" Click="Zamknij_Click"/>
+            </MenuItem>
+            <MenuItem Header="Edycja">
+                <MenuItem Header="Cofnij"/>
+                <MenuItem Header="Ponów"/>
+                <Separator/>
+                <MenuItem Header="Kopiuj"/>
+                <MenuItem Header="Wklej"/>
+                <MenuItem Header="Wytnij"/>
+                <MenuItem Header="Usuń"/>
+            </MenuItem>
+            <MenuItem Header="Widok">
+                <MenuItem x:Name="FullScreen" Header="Pełny ekran" InputGestureText="F11" IsCheckable="True" Checked="FullScreen_Checked" Unchecked="FullScreen_Unchecked"/>
+                <MenuItem x:Name="PianoKeyboardView" Header="Klawiatura fortepianu" IsCheckable="True" IsChecked="True" Checked="PianoKeyboardView_Checked" Unchecked="PianoKeyboardView_Unchecked"/>
+            </MenuItem>
+            <MenuItem Header="Pomoc">
+                <MenuItem Header="Podręcznik"/>
+                <Separator/>
+                <MenuItem Header="O Harmony Analyser..."/>
+                <MenuItem Header="O MusicXML..."/>
+            </MenuItem>
+        </Menu>
+
+        <Grid x:Name="MainArea" Grid.Row="1" PreviewMouseLeftButtonDown="MainArea_PreviewMouseLeftButtonDown">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                <Canvas x:Name="ScoreCanvas" MinWidth="1440" Background="White" Margin="30" VerticalAlignment="Top"/>
+            </ScrollViewer>
+        </Grid>
+
+        <Viewbox x:Name="PianoKeyboard_Viewbox" Grid.Row="2" Stretch="Fill">
+            <local:PianoKeyboard x:Name="PianoKeyboard"/>
+        </Viewbox>
+    </Grid>
+</Window>
