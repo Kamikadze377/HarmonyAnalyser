@@ -22,9 +22,6 @@ namespace HarmonyAnalyser
         private readonly double _xLimit = 1336;
         private readonly double _systemSpacing = 227;
 
-        private NoteElement _selectedNote;  // Podejrzewam, że tutaj leży problem w niechowaniu się ukrytych nut po podwójnym kliknięciu w zwykłą nutę
-        public NoteElement SelectedNote => _selectedNote;
-
         private SubchordElement _selectedSubchord;
         public SubchordElement SelectedSubchord => _selectedSubchord;
 
@@ -52,7 +49,6 @@ namespace HarmonyAnalyser
             public TextBlock LedgerLines { get; set; }
             public List<NoteElement> HiddenNotes { get; set; } = new();
 
-            public bool IsChecked { get; set; }
             public bool IsAnimated { get; set; }
             public bool IsUnwrapped { get; set; }
         }
@@ -928,8 +924,11 @@ namespace HarmonyAnalyser
 
                 component.MouseLeftButtonDown += (s, e) => 
                 {
-                    if (_selectedSubchord != null && _selectedSubchord != note.Subchord.Element && _selectedNote != null && _selectedNote != note)
+                    if (_selectedSubchord != note.Subchord.Element)
+                    {
                         UncheckSubchord();
+                        note.Subchord.Element.IsChecked = false;
+                    }
 
                     if (e.ClickCount == 1)
                         CheckSubchord(note.Subchord.Element);
@@ -1081,8 +1080,11 @@ namespace HarmonyAnalyser
 
             subchord.Selection.MouseLeftButtonDown += (s, e) =>
             {
-                if (_selectedSubchord != null && _selectedSubchord != subchord && _selectedNote != null && _selectedNote != subchord.Subchord.NoteElement)
+                if (_selectedSubchord != null && _selectedSubchord != subchord)
+                {
                     UncheckSubchord();
+                    subchord.IsChecked = false;
+                }
 
                 if (e.ClickCount == 1)
                     CheckSubchord(subchord);
@@ -1100,15 +1102,17 @@ namespace HarmonyAnalyser
 
         public void CheckSubchord(SubchordElement subchord, bool doubleClick = false)
         {
+            if (subchord.Subchord.NoteElement.IsAnimated)
+                return;
+
             if (!subchord.IsChecked)
             {
-                _selectedSubchord = subchord;
-
                 if (_selectedChord != null)
                 {
                     if (_selectedChord != subchord.Subchord.Chord.Element)
                         UncheckChord();
 
+                    CheckChord(subchord.Subchord.Chord.Element);
                     UnwrapChord(subchord.Subchord.Chord.Element);
                 }
                 else
@@ -1120,18 +1124,15 @@ namespace HarmonyAnalyser
                 }
 
                 AnimateBrush((SolidColorBrush)subchord.Text.Foreground, ((SolidColorBrush)subchord.Text.Foreground).Color, Colors.LimeGreen);
-                _selectedSubchord.IsChecked = true;
-                _pianoKeyboard.HighlightKeys(subchord.Subchord);
-            }
 
-            if (!subchord.Subchord.NoteElement.IsChecked)
-            {
-                _selectedNote = subchord.Subchord.NoteElement;
-                _selectedNote.IsChecked = true;
-                _selectedNote.Subchord.IsChecked = true;
-
-                foreach (var component in _selectedNote.Components)
+                foreach (var component in subchord.Subchord.NoteElement.Components)
                     AnimateBrush((SolidColorBrush)component.Foreground, ((SolidColorBrush)component.Foreground).Color, Colors.LimeGreen);
+
+                _pianoKeyboard.HighlightKeys(subchord.Subchord);
+
+                subchord.IsChecked = true;
+
+                _selectedSubchord = subchord;
             }
 
             if (doubleClick)
@@ -1140,6 +1141,7 @@ namespace HarmonyAnalyser
                     WrapChord(subchord.Subchord.Chord.Element);
 
                 UncheckSubchord();
+                subchord.Subchord.Element.IsChecked = false;
             }
         }
 
@@ -1148,21 +1150,15 @@ namespace HarmonyAnalyser
             if (_selectedSubchord != null)
             {
                 AnimateBrush((SolidColorBrush)_selectedSubchord.Text.Foreground, ((SolidColorBrush)_selectedSubchord.Text.Foreground).Color, Colors.Black);
+
+                foreach (var component in _selectedSubchord.Subchord.NoteElement.Components)
+                    AnimateBrush((SolidColorBrush)component.Foreground, ((SolidColorBrush)component.Foreground).Color, Colors.Black);
+
+                _pianoKeyboard.ResetHighlight();
+
                 _selectedSubchord.IsChecked = false;
                 _selectedSubchord = null;
             }
-
-            if (_selectedNote != null)
-            {
-                foreach (var component in _selectedNote.Components)
-                    AnimateBrush((SolidColorBrush)component.Foreground, ((SolidColorBrush)component.Foreground).Color, Colors.Black);
-
-                _selectedNote.IsChecked = false;
-                _selectedNote.Subchord.IsChecked = false;
-                _selectedNote = null;
-            }
-
-            _pianoKeyboard.ResetHighlight();
         }
 
         public void AddChord(double x, double y, ChordElement chord)
@@ -1227,7 +1223,11 @@ namespace HarmonyAnalyser
         public void CheckChord(ChordElement chord, bool doubleClick = false)
         {
             if (!chord.IsChecked)
+            {
                 AnimateBrush((SolidColorBrush)chord.Selection.BorderBrush, ((SolidColorBrush)chord.Selection.BorderBrush).Color, Colors.LimeGreen);
+                chord.IsChecked = true;
+                _selectedChord = chord;
+            }
 
             if (doubleClick)    // Rozwijanie podakordów
             {
@@ -1235,8 +1235,6 @@ namespace HarmonyAnalyser
                     UnwrapChord(chord);
                 CheckSubchord(chord.Chord.Subchords[0].Element);
             }
-
-            _selectedChord = chord;
         }
 
         public void UncheckChord()
@@ -1247,7 +1245,7 @@ namespace HarmonyAnalyser
 
                 if (_selectedChord.IsUnwrapped)  // Zwijanie podakordów
                     WrapChord(_selectedChord);
-                
+
                 _selectedChord.IsChecked = false;
                 _selectedChord = null;
             }
@@ -1341,7 +1339,7 @@ namespace HarmonyAnalyser
                         mainNote.IsAnimated = false;
                         mainNote.IsUnwrapped = true;
 
-                        if (!mainNote.IsChecked && !mainNote.IsUnwrapped)
+                        if (!mainNote.Subchord.Chord.Element.IsUnwrapped)
                             AnimateHiddenNotes(mainNote, false);
                     };
 
@@ -1374,7 +1372,7 @@ namespace HarmonyAnalyser
                         mainNote.IsAnimated = false;
                         mainNote.IsUnwrapped = false;
 
-                        if (mainNote.IsChecked && mainNote.IsUnwrapped)
+                        if (mainNote.Subchord.Chord.Element.IsUnwrapped)
                             AnimateHiddenNotes(mainNote, true);
                     };
 
