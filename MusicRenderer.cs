@@ -22,11 +22,14 @@ namespace HarmonyAnalyser
         private readonly double _xLimit = 1336;
         private readonly double _systemSpacing = 227;
 
-        private NoteElement _selectedNote;
+        private NoteElement _selectedNote;  // Podejrzewam, że tutaj leży problem w niechowaniu się ukrytych nut po podwójnym kliknięciu w zwykłą nutę
         public NoteElement SelectedNote => _selectedNote;
 
-        private Border _chordSelection;
-        public Border ChordSelection => _chordSelection;
+        private SubchordElement _selectedSubchord;
+        public SubchordElement SelectedSubchord => _selectedSubchord;
+
+        private ChordElement _selectedChord;
+        public ChordElement SelectedChord => _selectedChord;
 
         public MusicRenderer(Canvas canvas)
         {
@@ -45,16 +48,37 @@ namespace HarmonyAnalyser
         {
             public List<TextBlock> Components { get; set; } = new();
             public ChordManager.Note Note { get; set; }
-            public ChordManager.Chord Chord { get; set; }
+            public ChordManager.Subchord Subchord { get; set; }
             public TextBlock LedgerLines { get; set; }
             public List<NoteElement> HiddenNotes { get; set; } = new();
 
             public bool IsChecked { get; set; }
             public bool IsAnimated { get; set; }
-            public bool IsExpanded { get; set; }
+            public bool IsUnwrapped { get; set; }
+        }
+
+        public class SubchordElement
+        {
+            public TextBlock Text { get; set; }
+            public Border Selection { get; set; }
+            public ChordManager.Subchord Subchord { get; set; }
+
+            public bool IsChecked { get; set; }
+        }
+
+        public class ChordElement
+        {
+            public TextBlock Text { get; set; }
+            public Border Selection { get; set; }
+            public ChordManager.Chord Chord { get; set; }
+
+            public bool IsChecked { get; set; }
+            public bool IsUnwrapped { get; set; }
         }
 
         public List<NoteElement> NoteElements = new List<NoteElement>();
+        public List<SubchordElement> SubchordElements = new List<SubchordElement>();
+        public List<ChordElement> ChordElements = new List<ChordElement>();
 
         private void UpdateCanvasSize() // Dynamiczny rozmiar obszaru nutowego
         {
@@ -91,14 +115,16 @@ namespace HarmonyAnalyser
             double systemSpacing = _systemSpacing;
             double measureSpacing;
             double noteSpacing = 36;
-            double chordSpacing = 46;
+            double subchordSpacing = 46;
             double beatDuration = 1;
+            double subchordShifted;
             double chordShifted;
 
             int noteIndex;
             int notePoint;
             int barIndex;
             int timeIndex = 0;
+            int subchordIndex = 0;
             int chordIndex = 0;
 
             foreach (var part in _score.Parts)
@@ -163,10 +189,11 @@ namespace HarmonyAnalyser
 
                         noteSpacing = (xLimit - xShifted) / (part.Measures[timeIndex].Attributes.Time.Beats * 4);
                         measureSpacing = noteSpacing * part.Measures[timeIndex].Attributes.Time.Beats;
-                        chordSpacing = measureSpacing / measureDuration;
+                        subchordSpacing = measureSpacing / measureDuration;
                         beatDuration = measureDuration / part.Measures[timeIndex].Attributes.Time.Beats;
                     }
 
+                    subchordShifted = xShifted;
                     chordShifted = xShifted;
 
                     // Dodanie nut 
@@ -238,24 +265,25 @@ namespace HarmonyAnalyser
                         }
                     }
 
-                    // Dodanie akordów
+                    // Dodanie podakordów
 
                     for (int i = 0; i < measureDuration; i++)
                     {
-                        for (int j = chordIndex; j < _chordManager.Chords.Count; j++)
+                        for (int j = subchordIndex; j < _chordManager.Subchords.Count; j++)
                         {
-                            if (_chordManager.Chords[j].Point == i && _chordManager.Chords[j].MeasureNumber == barIndex + 1)
+                            if (_chordManager.Subchords[j].Point == i && _chordManager.Subchords[j].MeasureNumber == barIndex + 1)
                             {
-                                AddChord(chordShifted, yOffset, _chordManager.Chords[j]);
+                                SubchordElement subchordElement = new SubchordElement { Subchord = _chordManager.Subchords[j] };
+                                _chordManager.Subchords[j].Element = subchordElement;
+                                AddSubchord(subchordShifted, yOffset, subchordElement);
 
-                                // Powiązanie akordów z wyświetlanymi nutami
-
+                                // Powiązanie podakordów z wyświetlanymi nutami
                                 for (int k = 0; k < NoteElements.Count; k++)
                                 {
                                     if (NoteElements[k].Note.Point == i && NoteElements[k].Note.MeasureNumber == barIndex + 1)
                                     {
-                                        NoteElements[k].Chord = _chordManager.Chords[j];
-                                        _chordManager.Chords[j].NoteElement = NoteElements[k];
+                                        NoteElements[k].Subchord = _chordManager.Subchords[j];
+                                        _chordManager.Subchords[j].NoteElement = NoteElements[k];
                                         break;
                                     }
                                     else if (NoteElements[k].Note.Point > i && NoteElements[k].Note.MeasureNumber == barIndex + 1)
@@ -272,12 +300,12 @@ namespace HarmonyAnalyser
                                         NoteElement noteElement = new NoteElement
                                         {
                                             Note = note,
-                                            Chord = _chordManager.Chords[j]
+                                            Subchord = _chordManager.Subchords[j]
                                         };
 
-                                        _chordManager.Chords[j].NoteElement = noteElement;
+                                        _chordManager.Subchords[j].NoteElement = noteElement;
                                         NoteElements[k - 1].HiddenNotes.Add(noteElement);
-                                        AddNote(chordShifted, yOffset, noteElement.Note.Step, noteElement.Note.Octave, null, noteElement, false, true);
+                                        AddNote(subchordShifted, yOffset, noteElement.Note.Step, noteElement.Note.Octave, null, noteElement, false, true);
                                         
                                         foreach (var component in noteElement.Components)
                                             component.Visibility = Visibility.Hidden;
@@ -301,12 +329,12 @@ namespace HarmonyAnalyser
                                         NoteElement noteElement = new NoteElement
                                         {
                                             Note = note,
-                                            Chord = _chordManager.Chords[j]
+                                            Subchord = _chordManager.Subchords[j]
                                         };
 
-                                        _chordManager.Chords[j].NoteElement = noteElement;
+                                        _chordManager.Subchords[j].NoteElement = noteElement;
                                         NoteElements[k].HiddenNotes.Add(noteElement);
-                                        AddNote(chordShifted, yOffset, noteElement.Note.Step, noteElement.Note.Octave, null, noteElement, false, true);
+                                        AddNote(subchordShifted, yOffset, noteElement.Note.Step, noteElement.Note.Octave, null, noteElement, false, true);
 
                                         foreach (var component in noteElement.Components)
                                             component.Visibility = Visibility.Hidden;
@@ -316,12 +344,31 @@ namespace HarmonyAnalyser
                                     }
                                 }
 
+                                subchordIndex++;
+                                break;
+                            }
+                        }
+
+                        subchordShifted += subchordSpacing;
+                    }
+
+                    // Dodanie akordów
+
+                    for (int i = 0; i < measureDuration; i++)
+                    {
+                        for (int j = chordIndex; j < _chordManager.Chords.Count; j++)
+                        {
+                            if (_chordManager.Chords[j].StartPoint == i && _chordManager.Chords[j].MeasureNumber == barIndex + 1)
+                            {
+                                ChordElement chordElement = new ChordElement { Chord = _chordManager.Chords[j] };
+                                _chordManager.Chords[j].Element = chordElement;
+                                AddChord(chordShifted, yOffset, chordElement);
                                 chordIndex++;
                                 break;
                             }
                         }
 
-                        chordShifted += chordSpacing;
+                        chordShifted += subchordSpacing;
                     }
 
                     // Dodanie kreski taktowej
@@ -385,7 +432,7 @@ namespace HarmonyAnalyser
 
             xShifted += 28;
 
-            AddChord(xShifted, yOffset);
+            AddSubchord(xShifted, yOffset);
 
             // 4 takty na system
 
@@ -881,13 +928,13 @@ namespace HarmonyAnalyser
 
                 component.MouseLeftButtonDown += (s, e) => 
                 {
-                    if (_chordSelection != null && _chordSelection != note.Chord.Selection && _selectedNote != null && _selectedNote != note)
-                        UncheckChord();
+                    if (_selectedSubchord != null && _selectedSubchord != note.Subchord.Element && _selectedNote != null && _selectedNote != note)
+                        UncheckSubchord();
 
                     if (e.ClickCount == 1)
-                        CheckChord(note.Chord);
+                        CheckSubchord(note.Subchord.Element);
                     else if (e.ClickCount == 2)
-                        CheckChord(note.Chord, true);
+                        CheckSubchord(note.Subchord.Element, true);
                 };
             }
         }
@@ -982,7 +1029,7 @@ namespace HarmonyAnalyser
             }
         }
 
-        public void AddChord(double x, double y)
+        public void AddSubchord(double x, double y)
         {
             TextBlock chord = new TextBlock
             {
@@ -998,14 +1045,134 @@ namespace HarmonyAnalyser
             _canvas.Children.Add(chord);
         }
 
-        public void AddChord(double x, double y, ChordManager.Chord chord)
+        public void AddSubchord(double x, double y, SubchordElement subchord)
+        {
+            string text;
+            if (subchord.Subchord.IsRepeated)
+                text = "\u2025";
+            else
+                text = subchord.Subchord.Name;
+
+            TextBlock subchordName = new TextBlock
+            {
+                Text = text,
+                FontFamily = new FontFamily("Century"),
+                FontSize = 25,
+                Foreground = new SolidColorBrush(Colors.Black),
+                Margin = new Thickness(6, 2, 6, 2),
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                IsHitTestVisible = false
+            };
+
+            Border border = new Border
+            {
+                Child = subchordName,
+                CornerRadius = new CornerRadius(8),
+                BorderBrush = new SolidColorBrush(Colors.Transparent),
+                BorderThickness = new Thickness(1.25),
+                Background = Brushes.Transparent
+            };
+
+            subchord.Text = subchordName;
+            subchord.Selection = border;
+
+            Panel.SetZIndex(subchord.Selection, 2);
+
+            subchord.Selection.MouseLeftButtonDown += (s, e) =>
+            {
+                if (_selectedSubchord != null && _selectedSubchord != subchord && _selectedNote != null && _selectedNote != subchord.Subchord.NoteElement)
+                    UncheckSubchord();
+
+                if (e.ClickCount == 1)
+                    CheckSubchord(subchord);
+                else if (e.ClickCount == 2)
+                    CheckSubchord(subchord, true);
+            };
+
+            subchord.Selection.Visibility = Visibility.Collapsed;
+
+            Canvas.SetLeft(subchord.Selection, x + 2);
+            Canvas.SetTop(subchord.Selection, y - 66);
+
+            _canvas.Children.Add(subchord.Selection);
+        }
+
+        public void CheckSubchord(SubchordElement subchord, bool doubleClick = false)
+        {
+            if (!subchord.IsChecked)
+            {
+                _selectedSubchord = subchord;
+
+                if (_selectedChord != null)
+                {
+                    if (_selectedChord != subchord.Subchord.Chord.Element)
+                        UncheckChord();
+
+                    UnwrapChord(subchord.Subchord.Chord.Element);
+                }
+                else
+                {
+                    CheckChord(subchord.Subchord.Chord.Element);
+
+                    if (!subchord.Subchord.Chord.Element.IsUnwrapped)
+                        UnwrapChord(subchord.Subchord.Chord.Element);
+                }
+
+                AnimateBrush((SolidColorBrush)subchord.Text.Foreground, ((SolidColorBrush)subchord.Text.Foreground).Color, Colors.LimeGreen);
+                _selectedSubchord.IsChecked = true;
+                _pianoKeyboard.HighlightKeys(subchord.Subchord);
+            }
+
+            if (!subchord.Subchord.NoteElement.IsChecked)
+            {
+                _selectedNote = subchord.Subchord.NoteElement;
+                _selectedNote.IsChecked = true;
+                _selectedNote.Subchord.IsChecked = true;
+
+                foreach (var component in _selectedNote.Components)
+                    AnimateBrush((SolidColorBrush)component.Foreground, ((SolidColorBrush)component.Foreground).Color, Colors.LimeGreen);
+            }
+
+            if (doubleClick)
+            {
+                if (subchord.Subchord.Chord.Element.IsUnwrapped)
+                    WrapChord(subchord.Subchord.Chord.Element);
+
+                UncheckSubchord();
+            }
+        }
+
+        public void UncheckSubchord()
+        {
+            if (_selectedSubchord != null)
+            {
+                AnimateBrush((SolidColorBrush)_selectedSubchord.Text.Foreground, ((SolidColorBrush)_selectedSubchord.Text.Foreground).Color, Colors.Black);
+                _selectedSubchord.IsChecked = false;
+                _selectedSubchord = null;
+            }
+
+            if (_selectedNote != null)
+            {
+                foreach (var component in _selectedNote.Components)
+                    AnimateBrush((SolidColorBrush)component.Foreground, ((SolidColorBrush)component.Foreground).Color, Colors.Black);
+
+                _selectedNote.IsChecked = false;
+                _selectedNote.Subchord.IsChecked = false;
+                _selectedNote = null;
+            }
+
+            _pianoKeyboard.ResetHighlight();
+        }
+
+        public void AddChord(double x, double y, ChordElement chord)
         {
             TextBlock chordName = new TextBlock
             {
-                Text = chord.Name,
+                Text = chord.Chord.Name,
                 FontFamily = new FontFamily("Century"),
                 FontSize = 25,
-                Foreground = Brushes.Black,
+                Foreground = new SolidColorBrush(Colors.Black),
                 Margin = new Thickness(6, 2, 6, 2),
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Center,
@@ -1027,20 +1194,23 @@ namespace HarmonyAnalyser
 
             chord.Selection.MouseEnter += (s, e) =>
             {
-                if (_chordSelection != border)
+                if (_selectedChord != chord)
                     AnimateBrush((SolidColorBrush)border.BorderBrush, Colors.Transparent, Colors.Black);
             };
 
             chord.Selection.MouseLeave += (s, e) =>
             {
-                if (_chordSelection != border)
+                if (_selectedChord != chord)
                     AnimateBrush((SolidColorBrush)border.BorderBrush, Colors.Black, Colors.Transparent);
             };
 
             chord.Selection.MouseLeftButtonDown += (s, e) =>
             {
-                if (_chordSelection != null && _chordSelection != chord.Selection && _selectedNote != null && _selectedNote != chord.NoteElement)
+                if (_selectedChord != chord)
                     UncheckChord();
+
+                if (_selectedSubchord != null)
+                    UncheckSubchord();
 
                 if (e.ClickCount == 1)
                     CheckChord(chord);
@@ -1054,55 +1224,65 @@ namespace HarmonyAnalyser
             _canvas.Children.Add(chord.Selection);
         }
 
-        public void CheckChord(ChordManager.Chord chord, bool doubleClick = false)
+        public void CheckChord(ChordElement chord, bool doubleClick = false)
         {
-            _chordSelection = chord.Selection;
             if (!chord.IsChecked)
-            {
                 AnimateBrush((SolidColorBrush)chord.Selection.BorderBrush, ((SolidColorBrush)chord.Selection.BorderBrush).Color, Colors.LimeGreen);
-                _pianoKeyboard.HighlightKeys(chord);
-            }
 
-            _selectedNote = chord.NoteElement;
-
-            if (!_selectedNote.IsChecked)
-                foreach (var component in _selectedNote.Components)
-                    AnimateBrush((SolidColorBrush)component.Foreground, ((SolidColorBrush)component.Foreground).Color, Colors.LimeGreen);
-
-            _selectedNote.IsChecked = true;
-            _selectedNote.Chord.IsChecked = true;
-
-            if (doubleClick)
+            if (doubleClick)    // Rozwijanie podakordów
             {
-                if (_selectedNote.HiddenNotes != null && _selectedNote.HiddenNotes.Count > 0 && !_selectedNote.IsExpanded)
-                    AnimateHiddenNotes(_selectedNote, true);
-                else if (_selectedNote.HiddenNotes != null && _selectedNote.HiddenNotes.Count > 0 && _selectedNote.IsExpanded)
-                    AnimateHiddenNotes(_selectedNote, false);
+                if (!chord.IsUnwrapped)
+                    UnwrapChord(chord);
+                CheckSubchord(chord.Chord.Subchords[0].Element);
             }
+
+            _selectedChord = chord;
         }
 
         public void UncheckChord()
         {
-            if (_chordSelection != null)
+            if (_selectedChord != null)
             {
-                AnimateBrush((SolidColorBrush)_chordSelection.BorderBrush, ((SolidColorBrush)_chordSelection.BorderBrush).Color, Colors.Transparent);
-                _chordSelection = null;
-            }
-            _pianoKeyboard.ResetHighlight();
+                AnimateBrush((SolidColorBrush)_selectedChord.Selection.BorderBrush, ((SolidColorBrush)_selectedChord.Selection.BorderBrush).Color, Colors.Transparent);
 
-            if (_selectedNote != null)
+                if (_selectedChord.IsUnwrapped)  // Zwijanie podakordów
+                    WrapChord(_selectedChord);
+                
+                _selectedChord.IsChecked = false;
+                _selectedChord = null;
+            }
+        }
+
+        public void WrapChord(ChordElement chord)
+        {
+            chord.Selection.Visibility = Visibility.Visible;
+
+            foreach (var subchord in chord.Chord.Subchords)
             {
-                _selectedNote.IsChecked = false;
-                _selectedNote.Chord.IsChecked = false;  
+                subchord.Element.Selection.Visibility = Visibility.Collapsed;
 
-                foreach (var component in _selectedNote.Components)
-                AnimateBrush((SolidColorBrush)component.Foreground, ((SolidColorBrush)component.Foreground).Color, Colors.Black);
-
-                if (_selectedNote.HiddenNotes != null && _selectedNote.HiddenNotes.Count > 0)
-                    AnimateHiddenNotes(_selectedNote, false);
-
-                _selectedNote = null;
+                // Zwijanie ukrytych nut
+                if (subchord.NoteElement.HiddenNotes != null && subchord.NoteElement.HiddenNotes.Count > 0 && subchord.NoteElement.IsUnwrapped)
+                    AnimateHiddenNotes(subchord.NoteElement, false);
             }
+
+            chord.IsUnwrapped = false;
+        }
+
+        public void UnwrapChord(ChordElement chord)
+        {
+            chord.Selection.Visibility = Visibility.Collapsed;
+
+            foreach (var subchord in chord.Chord.Subchords)
+            {
+                subchord.Element.Selection.Visibility = Visibility.Visible;
+
+                // Rozwijanie ukrytych nut
+                if (subchord.NoteElement.HiddenNotes != null && subchord.NoteElement.HiddenNotes.Count > 0 && !subchord.NoteElement.IsUnwrapped)
+                    AnimateHiddenNotes(subchord.NoteElement, true);
+            }
+
+            chord.IsUnwrapped = true;
         }
 
         private void AnimateBrush(SolidColorBrush brush, Color from, Color to, int ms = 150)
@@ -1159,9 +1339,9 @@ namespace HarmonyAnalyser
                     moveY.Completed += (s, e) =>
                     {
                         mainNote.IsAnimated = false;
-                        mainNote.IsExpanded = true;
+                        mainNote.IsUnwrapped = true;
 
-                        if (!mainNote.IsChecked && !mainNote.IsExpanded)
+                        if (!mainNote.IsChecked && !mainNote.IsUnwrapped)
                             AnimateHiddenNotes(mainNote, false);
                     };
 
@@ -1192,9 +1372,9 @@ namespace HarmonyAnalyser
                         hiddenNoteHead.BeginAnimation(Canvas.TopProperty, null);
 
                         mainNote.IsAnimated = false;
-                        mainNote.IsExpanded = false;
+                        mainNote.IsUnwrapped = false;
 
-                        if (mainNote.IsChecked && mainNote.IsExpanded)
+                        if (mainNote.IsChecked && mainNote.IsUnwrapped)
                             AnimateHiddenNotes(mainNote, true);
                     };
 

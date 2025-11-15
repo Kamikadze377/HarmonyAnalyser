@@ -41,6 +41,7 @@ namespace HarmonyAnalyser
                 {
                     ChordManager chordManager = new(score);
                     musicRenderer = new(ScoreCanvas, score, chordManager, PianoKeyboard);
+                    chordManager.ExtractSubchords();
                     chordManager.ExtractChords();
                     musicRenderer.DrawScore();
                     PianoKeyboard.ResetHighlight();
@@ -117,8 +118,8 @@ namespace HarmonyAnalyser
 
         private void MainArea_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            /* if (musicRenderer.ChordSelection != null || musicRenderer.SelectedNote != null)
-                musicRenderer.UncheckChord(); */
+            /* if (musicRenderer.SubchordSelection != null || musicRenderer.SelectedNote != null)
+                musicRenderer.UncheckSubchord(); */
         }
 
         private void PianoKeyboardView_Checked(object sender, RoutedEventArgs e)

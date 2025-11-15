@@ -133,7 +133,7 @@ namespace HarmonyAnalyser
             return path;
         }
 
-        public void HighlightKeys(ChordManager.Chord chord)
+        public void HighlightKeys(ChordManager.Subchord chord)
         {
             ResetHighlight();
 
