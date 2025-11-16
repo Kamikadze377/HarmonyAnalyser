@@ -67,6 +67,7 @@ namespace HarmonyAnalyser
             public TextBlock Text { get; set; }
             public Border Selection { get; set; }
             public ChordManager.Chord Chord { get; set; }
+            public Rectangle SubchordsMask { get; set; }
 
             public bool IsChecked { get; set; }
             public bool IsUnwrapped { get; set; }
@@ -261,7 +262,30 @@ namespace HarmonyAnalyser
                         }
                     }
 
+                    // Dodanie akordów
+
+                    for (int i = 0; i < measureDuration; i++)
+                    {
+                        for (int j = chordIndex; j < _chordManager.Chords.Count; j++)
+                        {
+                            if (_chordManager.Chords[j].StartPoint == i && _chordManager.Chords[j].MeasureNumber == barIndex + 1)
+                            {
+                                ChordElement chordElement = new ChordElement { Chord = _chordManager.Chords[j] };
+                                _chordManager.Chords[j].Element = chordElement;
+                                AddChord(chordShifted, yOffset, chordElement);
+                                chordIndex++;
+                                break;
+                            }
+                        }
+
+                        chordShifted += subchordSpacing;
+                    }
+
                     // Dodanie podakordów
+
+                    chordIndex = 0;
+                    int chordSubchordIndex = 0;
+                    double maskX = 0;
 
                     for (int i = 0; i < measureDuration; i++)
                     {
@@ -272,6 +296,39 @@ namespace HarmonyAnalyser
                                 SubchordElement subchordElement = new SubchordElement { Subchord = _chordManager.Subchords[j] };
                                 _chordManager.Subchords[j].Element = subchordElement;
                                 AddSubchord(subchordShifted, yOffset, subchordElement);
+
+                                if (_chordManager.Subchords[j].Point == _chordManager.Chords[chordIndex].StartPoint)
+                                {
+                                    if (chordSubchordIndex == 1)
+                                        maskX = subchordShifted;
+                                }
+                                
+                                if (_chordManager.Subchords[j].Point == _chordManager.Chords[chordIndex].EndPoint)
+                                {
+                                    Rectangle rectangle = new Rectangle
+                                    {
+                                        Fill = new SolidColorBrush(Colors.Blue),
+                                        Width = subchordShifted - maskX,
+                                        Height = 36,
+                                        Stroke = new SolidColorBrush(Colors.Black),
+                                        StrokeThickness = 1.25
+
+                                    };
+
+                                    _chordManager.Chords[chordIndex].Element.SubchordsMask = rectangle;
+
+                                    Panel.SetZIndex(_chordManager.Chords[chordIndex].Element.SubchordsMask, 3);
+
+                                    Canvas.SetLeft(_chordManager.Chords[chordIndex].Element.SubchordsMask, maskX + 2 + _chordManager.Chords[chordIndex].Element.SubchordsMask.Width / 2);
+                                    Canvas.SetTop(_chordManager.Chords[chordIndex].Element.SubchordsMask, yOffset - 66);
+
+                                    _canvas.Children.Add(_chordManager.Chords[chordIndex].Element.SubchordsMask);
+
+                                    chordSubchordIndex = 0;
+                                    chordIndex++;
+                                }
+                                else
+                                    chordSubchordIndex++;
 
                                 // Powiązanie podakordów z wyświetlanymi nutami
                                 for (int k = 0; k < NoteElements.Count; k++)
@@ -302,7 +359,7 @@ namespace HarmonyAnalyser
                                         _chordManager.Subchords[j].NoteElement = noteElement;
                                         NoteElements[k - 1].HiddenNotes.Add(noteElement);
                                         AddNote(subchordShifted, yOffset, noteElement.Note.Step, noteElement.Note.Octave, null, noteElement, false, true);
-                                        
+
                                         foreach (var component in noteElement.Components)
                                             component.Visibility = Visibility.Hidden;
 
@@ -346,25 +403,6 @@ namespace HarmonyAnalyser
                         }
 
                         subchordShifted += subchordSpacing;
-                    }
-
-                    // Dodanie akordów
-
-                    for (int i = 0; i < measureDuration; i++)
-                    {
-                        for (int j = chordIndex; j < _chordManager.Chords.Count; j++)
-                        {
-                            if (_chordManager.Chords[j].StartPoint == i && _chordManager.Chords[j].MeasureNumber == barIndex + 1)
-                            {
-                                ChordElement chordElement = new ChordElement { Chord = _chordManager.Chords[j] };
-                                _chordManager.Chords[j].Element = chordElement;
-                                AddChord(chordShifted, yOffset, chordElement);
-                                chordIndex++;
-                                break;
-                            }
-                        }
-
-                        chordShifted += subchordSpacing;
                     }
 
                     // Dodanie kreski taktowej
@@ -1092,7 +1130,7 @@ namespace HarmonyAnalyser
                     CheckSubchord(subchord, true);
             };
 
-            subchord.Selection.Visibility = Visibility.Collapsed;
+            //subchord.Selection.Visibility = Visibility.Collapsed;
 
             Canvas.SetLeft(subchord.Selection, x + 2);
             Canvas.SetTop(subchord.Selection, y - 66);
@@ -1181,12 +1219,28 @@ namespace HarmonyAnalyser
                 CornerRadius = new CornerRadius(8),
                 BorderBrush = new SolidColorBrush(Colors.Transparent),
                 BorderThickness = new Thickness(1.25),
-                Background = Brushes.Transparent
+                Background = Brushes.White
             };
 
             chord.Selection = border;
 
-            Panel.SetZIndex(chord.Selection, 2);
+            Panel.SetZIndex(chord.Selection, 4);
+
+            //Rectangle rectangle = new Rectangle
+            //{
+            //    Fill = new SolidColorBrush(Colors.Blue),
+            //    Width = 50,
+            //    Height = 25
+            //};
+
+            //chord.SubchordsMask = rectangle;
+
+            //Panel.SetZIndex(chord.SubchordsMask, 3);
+
+            //Canvas.SetLeft(chord.SubchordsMask, x + 2);
+            //Canvas.SetTop(chord.SubchordsMask, y - 66);
+
+            //_canvas.Children.Add(chord.SubchordsMask);
 
             chord.Selection.MouseEnter += (s, e) =>
             {
@@ -1257,7 +1311,7 @@ namespace HarmonyAnalyser
 
             foreach (var subchord in chord.Chord.Subchords)
             {
-                subchord.Element.Selection.Visibility = Visibility.Collapsed;
+                //subchord.Element.Selection.Visibility = Visibility.Collapsed;
 
                 // Zwijanie ukrytych nut
                 if (subchord.NoteElement.HiddenNotes != null && subchord.NoteElement.HiddenNotes.Count > 0 && subchord.NoteElement.IsUnwrapped)
@@ -1269,7 +1323,7 @@ namespace HarmonyAnalyser
 
         public void UnwrapChord(ChordElement chord)
         {
-            chord.Selection.Visibility = Visibility.Collapsed;
+            //chord.Selection.Visibility = Visibility.Collapsed;
 
             foreach (var subchord in chord.Chord.Subchords)
             {
