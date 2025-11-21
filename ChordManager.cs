@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -643,41 +644,45 @@ namespace HarmonyAnalyser
         {
             List<Chord> chords = new List<Chord>();
             List<string> steps = new List<string>();
+            int chordIndex = 0;
             int endPointIndex = 0;
             bool incompleteChords = false;
 
-            for (int i = 0; i < subchords.Count; i++)
-            {
-                if (chords.Count == 0 && subchords[i].Name.ToArray()[0] != '(')
+            goto analysis;
+
+            analysis:
+                for (int i = 0; i < subchords.Count; i++)
                 {
-                    Chord chord = new Chord
+                    if (chords.Count == 0 && subchords[i].Name.ToArray()[0] != '(')
                     {
-                        Name = subchords[i].Name,
-                        StartPoint = subchords[i].Point,
-                        MeasureNumber = subchords[i].MeasureNumber,
-                    };
-                    chords.Add(chord);
-                    steps = GetSubchordSteps(subchords[i]);
-                    steps = SortChordSteps(steps);
-                    continue;
-                }
-                else if (chords.Count != 0 && subchords[i].Name.ToArray()[0] != '(' && !subchords[i].IsRepeated)
-                {
-                    chords[0].EndPoint = subchords[i - 1].Point;
-                    endPointIndex = i - 1;
-                    break;
-                }
-                else if (subchords[i].Name.ToArray()[0] == '(')
-                {
-                    incompleteChords = true;
-                }
+                        Chord chord = new Chord
+                        {
+                            Name = subchords[i].Name,
+                            StartPoint = subchords[i].Point,
+                            MeasureNumber = subchords[i].MeasureNumber,
+                        };
+                        chords.Add(chord);
+                        steps = GetSubchordSteps(subchords[i]);
+                        steps = SortChordSteps(steps);
+                        continue;
+                    }
+                    else if (chords.Count > 0 && subchords[i].Name.ToArray()[0] != '(' && !subchords[i].IsRepeated)
+                    {
+                        chords[0].EndPoint = subchords[i - 1].Point;
+                        endPointIndex = i - 1;
+                        break;
+                    }
+                    else if (subchords[i].Name.ToArray()[0] == '(')
+                    {
+                        incompleteChords = true;
+                    }
                 
-                if (i == subchords.Count - 1 && chords.Count > 0)
-                {
-                    chords[0].EndPoint = subchords[i].Point;
-                    endPointIndex = i;
+                    if (i == subchords.Count - 1 && chords.Count > 0)
+                    {
+                        chords[0].EndPoint = subchords[i].Point;
+                        endPointIndex = i;
+                    }
                 }
-            }
 
             if (!incompleteChords && endPointIndex == subchords.Count - 1)  // Brak niepełnych podakordów, identyczne pełne podakordy
             {
@@ -804,6 +809,31 @@ namespace HarmonyAnalyser
                     chords.Add(chord);
 
                     return chords;
+                }
+            }
+            else if (!incompleteChords && chords.Count > 0 && endPointIndex < subchords.Count - 1)      // Różne pełne podakordy
+            {
+                for (int i = endPointIndex + 1; i < subchords.Count; i++)
+                {
+                    if (chords.Count == 1 && subchords[i].Name.ToArray()[0] != '(')
+                    {
+                        Chord chord = new Chord
+                        {
+                            Name = subchords[i].Name,
+                            StartPoint = subchords[i].Point,
+                            MeasureNumber = subchords[i].MeasureNumber,
+                        };
+                        chords.Add(chord);
+                        steps = GetSubchordSteps(subchords[i]);
+                        steps = SortChordSteps(steps);
+                        continue;
+                    }
+                    else if (chords.Count > 1 && subchords[i].Name.ToArray()[0] != '(' && !subchords[i].IsRepeated)
+                    {
+                        chords[1].EndPoint = subchords[i - 1].Point;
+                        endPointIndex = i - 1;
+                        break;
+                    }
                 }
             }
             else
