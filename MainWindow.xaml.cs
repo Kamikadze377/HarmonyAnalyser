@@ -2,6 +2,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Xml.Serialization;
 
 namespace HarmonyAnalyser
@@ -22,6 +23,20 @@ namespace HarmonyAnalyser
 
             musicRenderer = new(ScoreCanvas);
             musicRenderer.DrawStartupScore();
+            Loaded += MainWindow_Loaded;
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            var area = SystemParameters.WorkArea;
+
+            WindowState = WindowState.Normal;
+            WindowStyle = WindowStyle.None;
+
+            Left = area.Left - 6;
+            Top = area.Top - 6;
+            Width = area.Width + 13;
+            Height = area.Height + 13;
         }
 
         private void Otworz_Click(object sender, RoutedEventArgs e)
@@ -136,6 +151,11 @@ namespace HarmonyAnalyser
         private void Zamknij_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        private void OnMinimizeButtonClick(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

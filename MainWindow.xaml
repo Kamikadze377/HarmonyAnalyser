@@ -5,14 +5,101 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:HarmonyAnalyser"
         mc:Ignorable="d"
-        Title="Harmony Analyser" WindowState="Maximized">
+        Title="Harmony Analyser" WindowState="Normal" WindowStyle="None" ResizeMode="CanResize" ShowInTaskbar="True">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Menu Grid.Row="0" VerticalAlignment="Top">
+
+        <Grid x:Name="TitleBar" 
+              Grid.Row="0" 
+              MinHeight="{StaticResource TitleBarHeight}" 
+              Background="{StaticResource TitleBarBackground}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*" MinWidth="40"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <DockPanel Grid.Column="1" HorizontalAlignment="Stretch">
+                <Menu
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    DockPanel.Dock="Left"
+                    WindowChrome.IsHitTestVisibleInChrome="True">
+                    <MenuItem Header="Plik">
+                        <MenuItem Header="Nowy" InputGestureText="Ctrl+N"/>
+                        <MenuItem Header="Otwórz..." Click="Otworz_Click" InputGestureText="Ctrl+O"/>
+                        <MenuItem Header="Zapisz" InputGestureText="Ctrl+S"/>
+                        <MenuItem Header="Zapisz jako..." InputGestureText="Ctrl+Shift+S"/>
+                        <MenuItem Header="Drukuj..." InputGestureText="Ctrl+P"/>
+                        <Separator/>
+                        <MenuItem Header="Zamknij" Click="Zamknij_Click" InputGestureText="Alt+F4"/>
+                    </MenuItem>
+                    <MenuItem Header="Edycja">
+                        <MenuItem Header="Cofnij" InputGestureText="Ctrl+Z"/>
+                        <MenuItem Header="Ponów" InputGestureText="Ctrl+Y"/>
+                        <Separator/>
+                        <MenuItem Header="Kopiuj" InputGestureText="Ctrl+C"/>
+                        <MenuItem Header="Wklej" InputGestureText="Ctrl+V"/>
+                        <MenuItem Header="Wytnij" InputGestureText="Ctrl+X"/>
+                        <MenuItem Header="Usuń"/>
+                    </MenuItem>
+                    <MenuItem Header="Widok">
+                        <MenuItem x:Name="FullScreen" Header="Pełny ekran" InputGestureText="F11" IsCheckable="True" Checked="FullScreen_Checked" Unchecked="FullScreen_Unchecked"/>
+                        <MenuItem x:Name="PianoKeyboardView" Header="Klawiatura fortepianu" IsCheckable="True" IsChecked="True" Checked="PianoKeyboardView_Checked" Unchecked="PianoKeyboardView_Unchecked"/>
+                    </MenuItem>
+                    <MenuItem Header="Pomoc">
+                        <MenuItem Header="Podręcznik"/>
+                        <Separator/>
+                        <MenuItem Header="O Harmony Analyser..."/>
+                        <MenuItem Header="O MusicXML..."/>
+                    </MenuItem>
+                </Menu>
+
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Text="Harmony Analyser"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap"/>
+            </DockPanel>
+
+            <Button
+                Grid.Column="2"
+                Click="OnMinimizeButtonClick"
+                Style="{StaticResource TitleBarButtonStyle}"
+                ToolTip="Minimize">
+                <Path
+                    Width="36"
+                    Height="32"
+                    Data="M 13,15 H 23"
+                    Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}"
+                    StrokeThickness="1"/>
+            </Button>
+
+            <Button 
+                x:Name="maximizeRestoreButton"
+                Grid.Column="3"
+                Click="OnMaximizeRestoreButtonClick"
+                Style="{StaticResource TitleBarButtonStyle}"
+                ToolTip="Maximize"
+                ToolTipOpening="maximizeRestoreButton_ToolTipOpening">
+                <Path
+                    Width="36"
+                    Height="32"
+                    Data="{Binding ElementName=window, Path=WindowState, Converter={StaticResource windowstateToPathConverter}}"
+                    Stroke="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}"
+                    StrokeThickness="1"/>
+            </Button>
+        </Grid>
+
+        <!--<Menu Grid.Row="0" VerticalAlignment="Top">
             <MenuItem Header="Plik">
                 <MenuItem Header="Nowy"/>
                 <MenuItem Header="Otwórz..." Click="Otworz_Click"/>
@@ -40,7 +127,7 @@
                 <MenuItem Header="O Harmony Analyser..."/>
                 <MenuItem Header="O MusicXML..."/>
             </MenuItem>
-        </Menu>
+        </Menu>-->
 
         <Grid x:Name="MainArea" Grid.Row="1" PreviewMouseLeftButtonDown="MainArea_PreviewMouseLeftButtonDown">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">

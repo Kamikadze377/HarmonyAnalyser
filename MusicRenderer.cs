@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Windows;
@@ -123,7 +124,7 @@ namespace HarmonyAnalyser
             _canvas.Height = maxY + 250;
         }
 
-        public void DrawScore()
+        public void DrawScore(int measuresPerSystem = 3)
         {
             _canvas.Children.Clear();   // Wyczyszczenie arkusza
 
@@ -195,7 +196,7 @@ namespace HarmonyAnalyser
                         }
                     }
 
-                    if (barIndex % 4 == 0)
+                    if (barIndex % measuresPerSystem == 0)
                     {
                         if (barIndex != 0)
                         {
@@ -207,7 +208,7 @@ namespace HarmonyAnalyser
                             DrawStaff(xShifted - 41, xShifted, yOffset);
                         }
 
-                        noteSpacing = (xLimit - xShifted) / (part.Measures[timeIndex].Attributes.Time.Beats * 4);
+                        noteSpacing = (xLimit - xShifted) / (part.Measures[timeIndex].Attributes.Time.Beats * measuresPerSystem);
                         measureSpacing = noteSpacing * part.Measures[timeIndex].Attributes.Time.Beats;
                         subchordSpacing = measureSpacing / measureDuration;
                         beatDuration = measureDuration / part.Measures[timeIndex].Attributes.Time.Beats;
@@ -1093,10 +1094,14 @@ namespace HarmonyAnalyser
         public void AddSubchord(double x, double y, SubchordElement subchord)
         {
             string text;
+
             if (subchord.Subchord.IsRepeated)
                 text = "\u2025";
             else
                 text = subchord.Subchord.Name;
+
+            if (subchord.Subchord.BassNote != subchord.Subchord.RootNote && subchord.Subchord.Name.ToArray()[0] != '(')
+                text += $"/{subchord.Subchord.BassNote}";
 
             TextBlock subchordName = new TextBlock
             {
@@ -1206,9 +1211,14 @@ namespace HarmonyAnalyser
 
         public void AddChord(double x, double y, ChordElement chord)
         {
+            var text = chord.Chord.Name;
+
+            if (chord.Chord.BassNote != chord.Chord.RootNote && chord.Chord.BassNote != null)
+                text += $"/{chord.Chord.BassNote}";
+
             TextBlock chordName = new TextBlock
             {
-                Text = chord.Chord.Name,
+                Text = text,
                 FontFamily = new FontFamily("Century"),
                 FontSize = 25,
                 Foreground = new SolidColorBrush(Colors.Black),
@@ -1224,26 +1234,29 @@ namespace HarmonyAnalyser
                 CornerRadius = new CornerRadius(8),
                 BorderBrush = new SolidColorBrush(Colors.Transparent),
                 BorderThickness = new Thickness(1.25),
-                Background = new SolidColorBrush(Colors.Transparent)
+                Background = new SolidColorBrush(Colors.White)
             };
 
-            Text text = new Text { TextBlock = chordName };
-            chord.Text = text;
-            Selection selection = new Selection { Border = border };
-            chord.Selection = selection;
+            Text chordText = new Text { TextBlock = chordName };
+            chord.Text = chordText;
+            Selection chordSelection = new Selection { Border = border };
+            chord.Selection = chordSelection;
 
             Panel.SetZIndex(chord.Selection.Border, 4);
 
             chord.Selection.Border.MouseEnter += (s, e) =>
             {
                 if (_selectedChord != chord)
+                {
+                    Panel.SetZIndex(chord.Selection.Border, 5);
                     AnimateBrush((SolidColorBrush)border.BorderBrush, Colors.Transparent, Colors.Black);
+                }
             };
 
             chord.Selection.Border.MouseLeave += (s, e) =>
             {
                 if (_selectedChord != chord)
-                    AnimateBrush((SolidColorBrush)border.BorderBrush, Colors.Black, Colors.Transparent);
+                    AnimateBrush((SolidColorBrush)border.BorderBrush, Colors.Black, Colors.Transparent, chord.Selection.Border);
             };
 
             chord.Selection.Border.MouseLeftButtonDown += (s, e) =>
@@ -1271,6 +1284,7 @@ namespace HarmonyAnalyser
             if (!chord.IsChecked)
             {
                 chord.IsChecked = true;
+                Panel.SetZIndex(chord.Selection.Border, 6);
                 _selectedChord = chord;
                 AnimateBrush((SolidColorBrush)chord.Selection.Border.BorderBrush, ((SolidColorBrush)chord.Selection.Border.BorderBrush).Color, Colors.LimeGreen);
             }
@@ -1288,7 +1302,7 @@ namespace HarmonyAnalyser
             if (_selectedChord != null)
             {
                 _selectedChord.IsChecked = false;
-
+                Panel.SetZIndex(_selectedChord.Selection.Border, 4);
                 AnimateBrush((SolidColorBrush)_selectedChord.Selection.Border.BorderBrush, ((SolidColorBrush)_selectedChord.Selection.Border.BorderBrush).Color, Colors.Transparent);
 
                 if (_selectedChord.IsUnwrapped)  // Zwijanie podakordów
@@ -1303,7 +1317,7 @@ namespace HarmonyAnalyser
             Rectangle rectangle = new Rectangle
             {
                 Fill = new SolidColorBrush(Colors.White),
-                Width = width - 6,
+                Width = width,
                 Height = 36
             };
 
@@ -1343,8 +1357,8 @@ namespace HarmonyAnalyser
                 }
                 else
                 {
-                    AnimateBrush((SolidColorBrush)chord.Text.TextBlock.Foreground, ((SolidColorBrush)chord.Text.TextBlock.Foreground).Color, Colors.Black, 700);
-                    AnimateBrush((SolidColorBrush)chord.Selection.Border.BorderBrush, ((SolidColorBrush)chord.Selection.Border.BorderBrush).Color, Colors.Transparent, 700);
+                    AnimateBrush((SolidColorBrush)chord.Text.TextBlock.Foreground, ((SolidColorBrush)chord.Text.TextBlock.Foreground).Color, Colors.Black, null, 700);
+                    AnimateBrush((SolidColorBrush)chord.Selection.Border.BorderBrush, ((SolidColorBrush)chord.Selection.Border.BorderBrush).Color, Colors.Transparent, null, 700);
                 }
 
                 AnimateBrush((SolidColorBrush)chord.Selection.Border.Background, ((SolidColorBrush)chord.Selection.Border.Background).Color, Colors.White);
@@ -1386,7 +1400,7 @@ namespace HarmonyAnalyser
             chord.IsUnwrapped = true;
         }
 
-        private void AnimateBrush(SolidColorBrush brush, Color from, Color to, int ms = 150)
+        private void AnimateBrush(SolidColorBrush brush, Color from, Color to, Border border = null, int ms = 150)
         {
             ColorAnimation animation = new ColorAnimation
             {
@@ -1395,6 +1409,14 @@ namespace HarmonyAnalyser
                 Duration = TimeSpan.FromMilliseconds(ms),
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
             };
+
+            if (border != null)     // Ramka akordu chowa się dopiero po zmienieniu koloru
+            {
+                animation.Completed += (s, e) =>
+                {
+                    Panel.SetZIndex(border, 4);
+                };
+            }
 
             brush.BeginAnimation(SolidColorBrush.ColorProperty, animation);
         }
