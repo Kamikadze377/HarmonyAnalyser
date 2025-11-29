@@ -41,7 +41,7 @@
               MinHeight="{StaticResource TitleBarHeight}" 
               Background="{StaticResource TitleBarBackground}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MinWidth="40"/>
+                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
@@ -82,14 +82,13 @@
                         <MenuItem Header="O MusicXML..."/>
                     </MenuItem>
                 </Menu>
-
-                <TextBlock
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Text="Harmony Analyser"
-                    TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap"/>
             </DockPanel>
+
+            <TextBlock
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Margin="0,0,-108,0"
+                Text="Harmony Analyser"/>
 
             <Button
                 Grid.Column="1"

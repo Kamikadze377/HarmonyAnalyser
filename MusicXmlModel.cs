@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Xml.Serialization;
 
 namespace HarmonyAnalyser
@@ -6,11 +7,20 @@ namespace HarmonyAnalyser
     [XmlRoot("score-partwise")]
     public class ScorePartwise
     {
+        [XmlElement("work")]
+        public List<Work> Works { get; set; }
+
         [XmlElement("part-list")]
         public PartList PartList { get; set; }
 
         [XmlElement("part")]
         public List<Part> Parts { get; set; }
+    }
+
+    public class Work
+    {
+        [XmlElement("work-title")]
+        public string WorkTitle { get; set; }
     }
 
     public class PartList

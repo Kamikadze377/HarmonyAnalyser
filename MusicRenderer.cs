@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
@@ -94,6 +91,9 @@ namespace HarmonyAnalyser
         public class Text
         {
             public TextBlock TextBlock { get; set; }
+            public double X1 { get; set; }
+            public double X2 { get; set; }
+            public double Y { get; set; }
             public bool IsAnimated { get; set; }
         }
 
@@ -147,6 +147,17 @@ namespace HarmonyAnalyser
             int timeIndex = 0;
             int subchordIndex = 0;
             int chordIndex = 0;
+
+            foreach (var work in _score.Works)
+            {
+                if (work != null)
+                    if (work.WorkTitle != null)
+                    {
+                        var title = work.WorkTitle;
+                        yOffset += 75;
+                        AddTitle(xShifted, yOffset - 225, title);
+                    }
+            }
 
             foreach (var part in _score.Parts)
             {
@@ -547,6 +558,28 @@ namespace HarmonyAnalyser
 
             UpdateCanvasSize();
         }
+
+        private void AddTitle(double xUnused, double y, string text)
+        {
+            TextBlock textBlock = new TextBlock
+            {
+                Text = text,
+                FontFamily = new FontFamily("Century"),
+                FontSize = 30,
+                Foreground = Brushes.Black
+            };
+
+            textBlock.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            double titleWidth = textBlock.DesiredSize.Width;
+
+            double centerX = 1440 / 2 - titleWidth / 2;
+
+            Canvas.SetLeft(textBlock, centerX);
+            Canvas.SetTop(textBlock, y);
+
+            _canvas.Children.Add(textBlock);
+        }
+
 
         private TextBlock AddSymbol(string text, double left, double top, double fontSize, bool transparent = false)
         {
