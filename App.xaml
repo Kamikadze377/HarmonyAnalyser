@@ -5,8 +5,8 @@
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <local:WindowStateToPathConverter x:Key="windowstateToPathConverter"/>
-        <local:WindowStateToThicknessConverter x:Key="windowstateToThicknessConverter"/>
+        <local:WindowStateToPathConverter x:Key="windowStateToPathConverter"/>
+        <local:WindowStateToThicknessConverter x:Key="windowStateToThicknessConverter"/>
         <local:CaptionHeightConverter x:Key="captionHeightConverter"/>
 
         <SolidColorBrush x:Key="TitleBarBackground" Color="#F3F3F3"/>

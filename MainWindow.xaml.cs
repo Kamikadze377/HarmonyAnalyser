@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Xml.Serialization;
+using System.Windows.Media;
 
 namespace HarmonyAnalyser
 {
@@ -21,22 +22,81 @@ namespace HarmonyAnalyser
         {
             InitializeComponent();
 
+            SourceInitialized += OnSourceInitialized;
             musicRenderer = new(ScoreCanvas);
             musicRenderer.DrawStartupScore();
-            Loaded += MainWindow_Loaded;
         }
 
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        private void OnSourceInitialized(object? sender, EventArgs e)
         {
-            var area = SystemParameters.WorkArea;
+            var source = (HwndSource)PresentationSource.FromVisual(this);
+            source.AddHook(WndProc);
+        }
 
-            WindowState = WindowState.Normal;
-            WindowStyle = WindowStyle.None;
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            switch (msg)
+            {
+                case NativeHelpers.WM_NCHITTEST:
+                    if (NativeHelpers.IsSnapLayoutEnabled())
+                    {
+                        // Return HTMAXBUTTON when the mouse is over the maximize/restore button
+                        var point = PointFromScreen(new Point(lParam.ToInt32() & 0xFFFF, lParam.ToInt32() >> 16));
+                        if (WpfHelpers.GetElementBoundsRelativeToWindow(maximizeRestoreButton, this).Contains(point))
+                        {
+                            handled = true;
+                            // Apply hover button style
+                            maximizeRestoreButton.Background = (Brush)App.Current.Resources["TitleBarButtonHoverBackground"];
+                            maximizeRestoreButton.Foreground = (Brush)App.Current.Resources["TitleBarButtonHoverForeground"];
+                            return new IntPtr(NativeHelpers.HTMAXBUTTON);
+                        }
+                        else
+                        {
+                            // Apply default button style (cursor is not on the button)
+                            maximizeRestoreButton.Background = (Brush)App.Current.Resources["TitleBarButtonBackground"];
+                            maximizeRestoreButton.Foreground = (Brush)App.Current.Resources["TitleBarButtonForeground"];
+                        }
+                    }
+                    break;
+                case NativeHelpers.WM_NCLBUTTONDOWN:
+                    if (NativeHelpers.IsSnapLayoutEnabled())
+                    {
+                        if (wParam.ToInt32() == NativeHelpers.HTMAXBUTTON)
+                        {
+                            handled = true;
+                            // Apply pressed button style
+                            maximizeRestoreButton.Background = (Brush)App.Current.Resources["TitleBarButtonPressedBackground"];
+                            maximizeRestoreButton.Foreground = (Brush)App.Current.Resources["TitleBarButtonPressedForeground"];
+                        }
+                    }
+                    break;
+                case NativeHelpers.WM_NCLBUTTONUP:
+                    if (NativeHelpers.IsSnapLayoutEnabled())
+                    {
+                        if (wParam.ToInt32() == NativeHelpers.HTMAXBUTTON)
+                        {
+                            // Apply default button style
+                            maximizeRestoreButton.Background = (Brush)App.Current.Resources["TitleBarButtonBackground"];
+                            maximizeRestoreButton.Foreground = (Brush)App.Current.Resources["TitleBarButtonForeground"];
+                            // Maximize or restore the window
+                            ToggleWindowState();
+                        }
+                    }
+                    break;
+            }
+            return IntPtr.Zero;
+        }
 
-            Left = area.Left - 6;
-            Top = area.Top - 6;
-            Width = area.Width + 13;
-            Height = area.Height + 13;
+        public void ToggleWindowState()
+        {
+            if (WindowState == WindowState.Maximized)
+            {
+                SystemCommands.RestoreWindow(this);
+            }
+            else
+            {
+                SystemCommands.MaximizeWindow(this);
+            }
         }
 
         private void Otworz_Click(object sender, RoutedEventArgs e)
@@ -86,8 +146,8 @@ namespace HarmonyAnalyser
 
         private void FullScreen_Unchecked(object sender, RoutedEventArgs e)
         {
-            this.WindowStyle = _WindowStyle;
-            this.WindowState = _WindowState;
+            //this.WindowStyle = _WindowStyle;
+            //this.WindowState = _WindowState;
         }
 
         protected override void OnKeyDown(System.Windows.Input.KeyEventArgs e)
@@ -155,7 +215,22 @@ namespace HarmonyAnalyser
 
         private void OnMinimizeButtonClick(object sender, RoutedEventArgs e)
         {
+            SystemCommands.MinimizeWindow(this);
+        }
 
+        private void OnMaximizeRestoreButtonClick(object sender, RoutedEventArgs e)
+        {
+            ToggleWindowState();
+        }
+
+        private void maximizeRestoreButton_ToolTipOpening(object sender, ToolTipEventArgs e)
+        {
+            maximizeRestoreButton.ToolTip = WindowState == WindowState.Normal ? "Maximize" : "Restore";
+        }
+
+        private void OnCloseButtonClick(object sender, RoutedEventArgs e)
+        {
+            this.Close();
         }
     }
 }
