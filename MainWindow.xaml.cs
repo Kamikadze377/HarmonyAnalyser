@@ -5,6 +5,8 @@ using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Xml.Serialization;
 using System.Windows.Media;
+using System.IO.Compression;
+using System.Linq;
 
 namespace HarmonyAnalyser
 {
@@ -25,78 +27,6 @@ namespace HarmonyAnalyser
             SourceInitialized += OnSourceInitialized;
             musicRenderer = new(ScoreCanvas);
             musicRenderer.DrawStartupScore();
-        }
-
-        private void OnSourceInitialized(object? sender, EventArgs e)
-        {
-            var source = (HwndSource)PresentationSource.FromVisual(this);
-            source.AddHook(WndProc);
-        }
-
-        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-        {
-            switch (msg)
-            {
-                case NativeHelpers.WM_NCHITTEST:
-                    if (NativeHelpers.IsSnapLayoutEnabled())
-                    {
-                        // Return HTMAXBUTTON when the mouse is over the maximize/restore button
-                        var point = PointFromScreen(new Point(lParam.ToInt32() & 0xFFFF, lParam.ToInt32() >> 16));
-                        if (WpfHelpers.GetElementBoundsRelativeToWindow(maximizeRestoreButton, this).Contains(point))
-                        {
-                            handled = true;
-                            // Apply hover button style
-                            maximizeRestoreButton.Background = (Brush)App.Current.Resources["TitleBarButtonHoverBackground"];
-                            maximizeRestoreButton.Foreground = (Brush)App.Current.Resources["TitleBarButtonHoverForeground"];
-                            return new IntPtr(NativeHelpers.HTMAXBUTTON);
-                        }
-                        else
-                        {
-                            // Apply default button style (cursor is not on the button)
-                            maximizeRestoreButton.Background = (Brush)App.Current.Resources["TitleBarButtonBackground"];
-                            maximizeRestoreButton.Foreground = (Brush)App.Current.Resources["TitleBarButtonForeground"];
-                        }
-                    }
-                    break;
-                case NativeHelpers.WM_NCLBUTTONDOWN:
-                    if (NativeHelpers.IsSnapLayoutEnabled())
-                    {
-                        if (wParam.ToInt32() == NativeHelpers.HTMAXBUTTON)
-                        {
-                            handled = true;
-                            // Apply pressed button style
-                            maximizeRestoreButton.Background = (Brush)App.Current.Resources["TitleBarButtonPressedBackground"];
-                            maximizeRestoreButton.Foreground = (Brush)App.Current.Resources["TitleBarButtonPressedForeground"];
-                        }
-                    }
-                    break;
-                case NativeHelpers.WM_NCLBUTTONUP:
-                    if (NativeHelpers.IsSnapLayoutEnabled())
-                    {
-                        if (wParam.ToInt32() == NativeHelpers.HTMAXBUTTON)
-                        {
-                            // Apply default button style
-                            maximizeRestoreButton.Background = (Brush)App.Current.Resources["TitleBarButtonBackground"];
-                            maximizeRestoreButton.Foreground = (Brush)App.Current.Resources["TitleBarButtonForeground"];
-                            // Maximize or restore the window
-                            ToggleWindowState();
-                        }
-                    }
-                    break;
-            }
-            return IntPtr.Zero;
-        }
-
-        public void ToggleWindowState()
-        {
-            if (WindowState == WindowState.Maximized)
-            {
-                SystemCommands.RestoreWindow(this);
-            }
-            else
-            {
-                SystemCommands.MaximizeWindow(this);
-            }
         }
 
         private void Otworz_Click(object sender, RoutedEventArgs e)
@@ -126,11 +56,114 @@ namespace HarmonyAnalyser
 
         static ScorePartwise LoadMusicXml(string filePath)
         {
-            XmlSerializer serializer = new XmlSerializer(typeof(ScorePartwise));
+            string ext = Path.GetExtension(filePath).ToLowerInvariant();
 
-            using (StreamReader reader = new StreamReader(filePath))
+            if (ext == ".xml" || ext == ".musicxml")
             {
-                return (ScorePartwise)serializer.Deserialize(reader);
+                try
+                {
+                    XmlSerializer serializer = new(typeof(ScorePartwise));
+                    using StreamReader reader = new(filePath);
+                    return (ScorePartwise?)serializer.Deserialize(reader);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
+            if (ext == ".mxl")
+            {
+                try
+                {
+                    using ZipArchive archive = ZipFile.OpenRead(filePath);
+
+                    var scoreEntry = archive.Entries
+                        .FirstOrDefault(e =>
+                            string.Equals(Path.GetFileName(e.FullName),
+                                          "score.xml",
+                                          StringComparison.OrdinalIgnoreCase));
+
+                    if (scoreEntry == null)
+                        return null;
+
+                    using var stream = scoreEntry.Open();
+                    XmlSerializer serializer = new(typeof(ScorePartwise));
+                    using StreamReader reader = new(stream);
+                    return (ScorePartwise?)serializer.Deserialize(reader);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
+            return null;
+        }
+
+        private void OnSourceInitialized(object? sender, EventArgs e)
+        {
+            var source = (HwndSource)PresentationSource.FromVisual(this);
+            source.AddHook(WndProc);
+        }
+
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            switch (msg)
+            {
+                case NativeHelpers.WM_NCHITTEST:
+                    if (NativeHelpers.IsSnapLayoutEnabled())
+                    {
+                        var point = PointFromScreen(new Point(lParam.ToInt32() & 0xFFFF, lParam.ToInt32() >> 16));
+                        if (WpfHelpers.GetElementBoundsRelativeToWindow(maximizeRestoreButton, this).Contains(point))
+                        {
+                            handled = true;
+                            maximizeRestoreButton.Background = (Brush)App.Current.Resources["TitleBarButtonHoverBackground"];
+                            maximizeRestoreButton.Foreground = (Brush)App.Current.Resources["TitleBarButtonHoverForeground"];
+                            return new IntPtr(NativeHelpers.HTMAXBUTTON);
+                        }
+                        else
+                        {
+                            maximizeRestoreButton.Background = (Brush)App.Current.Resources["TitleBarButtonBackground"];
+                            maximizeRestoreButton.Foreground = (Brush)App.Current.Resources["TitleBarButtonForeground"];
+                        }
+                    }
+                    break;
+                case NativeHelpers.WM_NCLBUTTONDOWN:
+                    if (NativeHelpers.IsSnapLayoutEnabled())
+                    {
+                        if (wParam.ToInt32() == NativeHelpers.HTMAXBUTTON)
+                        {
+                            handled = true;
+                            maximizeRestoreButton.Background = (Brush)App.Current.Resources["TitleBarButtonPressedBackground"];
+                            maximizeRestoreButton.Foreground = (Brush)App.Current.Resources["TitleBarButtonPressedForeground"];
+                        }
+                    }
+                    break;
+                case NativeHelpers.WM_NCLBUTTONUP:
+                    if (NativeHelpers.IsSnapLayoutEnabled())
+                    {
+                        if (wParam.ToInt32() == NativeHelpers.HTMAXBUTTON)
+                        {
+                            maximizeRestoreButton.Background = (Brush)App.Current.Resources["TitleBarButtonBackground"];
+                            maximizeRestoreButton.Foreground = (Brush)App.Current.Resources["TitleBarButtonForeground"];
+                            ToggleWindowState();
+                        }
+                    }
+                    break;
+            }
+            return IntPtr.Zero;
+        }
+
+        public void ToggleWindowState()
+        {
+            if (WindowState == WindowState.Maximized)
+            {
+                SystemCommands.RestoreWindow(this);
+            }
+            else
+            {
+                SystemCommands.MaximizeWindow(this);
             }
         }
 

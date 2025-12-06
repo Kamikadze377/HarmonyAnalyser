@@ -572,7 +572,7 @@ namespace HarmonyAnalyser
             textBlock.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             double titleWidth = textBlock.DesiredSize.Width;
 
-            double centerX = 1440 / 2 - titleWidth / 2;
+            double centerX = 1440 / 2 - titleWidth / 2 + 6;
 
             Canvas.SetLeft(textBlock, centerX);
             Canvas.SetTop(textBlock, y);
