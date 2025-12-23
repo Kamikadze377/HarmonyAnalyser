@@ -754,7 +754,7 @@ namespace HarmonyAnalyser
                                 continue;
                             else
                             {
-                                List<string> modifiedSteps = steps;     // Sprawdzenie, czy dźwięk niepełnego podakordu stanowi septymę akordu (w przyszłości: "septymę, nonę, undecymę lub tercdecymę akordu").
+                                List<string> modifiedSteps = steps;  // Sprawdzenie, czy dźwięk niepełnego podakordu stanowi septymę akordu (w przyszłości: "septymę, nonę, undecymę lub tercdecymę akordu").
                                 modifiedSteps.Add(subchordStep);
                                 string newChordName = GetChordName(modifiedSteps, subchords[i].BassNote);
                                 if (newChordName.ToArray()[0] != '(' && newChordName.ToArray()[0] != '?')
@@ -1039,12 +1039,13 @@ namespace HarmonyAnalyser
             string chordName;
             var chordIntervals = GetStepsIntervals(chordSteps);
             var chordSemitones = GetStepsSemitones(chordSteps);
+            var chordDetailedIntervals = GetStepsDetailedIntervals(chordSteps);
 
             switch (chordSemitones.Count)
             {
                 case 1:     // Dwudźwięki
 
-                    chordName = $"({chordIntervals[0]})";
+                    chordName = $"({chordDetailedIntervals[0]})";
                     break;
 
                 case 2:     // Trójdźwięki
@@ -1059,7 +1060,7 @@ namespace HarmonyAnalyser
                         chordName = $"{chordSteps[0]}dim";
                     else if ((chordSemitones[0] == 4 && chordSemitones[1] == 6) ||  // Niepełny akord septymowy
                         (chordSemitones[0] == 7 && chordSemitones[1] == 3))
-                        chordName = $"({chordIntervals[0]},{chordIntervals[1]})";
+                        chordName = $"({chordDetailedIntervals[0]},{chordDetailedIntervals[1]})";
                     else
                         goto default;
 
@@ -1180,6 +1181,61 @@ namespace HarmonyAnalyser
             }
 
             return chordIntervals;
+        }
+
+        public List<string> GetStepsDetailedIntervals(List<string> steps)
+        {
+            List<string> chordDetailedIntervals = new List<string>();
+            List<int> chordSemitones = GetStepsSemitones(steps);
+
+            for (int i = 0; i < chordSemitones.Count; i++)
+            {
+                switch(chordSemitones[i])
+                {
+                    case 0:
+                        chordDetailedIntervals.Add("1");
+                        break;
+                    case 1:
+                        chordDetailedIntervals.Add("2>");
+                        break;
+                    case 2:
+                        chordDetailedIntervals.Add("2");
+                        break;
+                    case 3:
+                        chordDetailedIntervals.Add("3>");
+                        break;
+                    case 4:
+                        chordDetailedIntervals.Add("3");
+                        break;
+                    case 5:
+                        chordDetailedIntervals.Add("4");
+                        break;
+                    case 6:
+                        var chordIntervals = GetStepsIntervals(steps);
+                        if (chordIntervals[i] == 4)
+                            chordDetailedIntervals.Add("4<");
+                        else if (chordIntervals[i] == 5)
+                            chordDetailedIntervals.Add("5>");
+                        break;
+                    case 7:
+                        chordDetailedIntervals.Add("5");
+                        break;
+                    case 8:
+                        chordDetailedIntervals.Add("6>");
+                        break;
+                    case 9:
+                        chordDetailedIntervals.Add("6");
+                        break;
+                    case 10:
+                        chordDetailedIntervals.Add("7");
+                        break;
+                    case 11:
+                        chordDetailedIntervals.Add("7<");
+                        break;
+                }
+            }    
+
+            return chordDetailedIntervals;
         }
 
         public List<int> GetStepsSemitones(List<string> steps)

@@ -1129,7 +1129,7 @@ namespace HarmonyAnalyser
             string text;
 
             if (subchord.Subchord.IsRepeated)
-                text = "\u2025";
+                text = " \u2025";
             else
                 text = subchord.Subchord.Name;
 
