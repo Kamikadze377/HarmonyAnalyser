@@ -265,5 +265,18 @@ namespace HarmonyAnalyser
         {
             this.Close();
         }
+
+        private void Drukuj_Click(object sender, RoutedEventArgs e)
+        {
+            PrintDialog printDialog = new PrintDialog();
+
+            if (printDialog.ShowDialog() == true)
+            {
+                ScoreCanvas.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                ScoreCanvas.Arrange(new Rect(ScoreCanvas.DesiredSize));
+
+                printDialog.PrintVisual(ScoreCanvas, "Harmony Analyser – partytura");
+            }
+        }
     }
 }

@@ -58,7 +58,7 @@
                         <MenuItem Header="Otwórz..." Click="Otworz_Click" InputGestureText="Ctrl+O"/>
                         <MenuItem Header="Zapisz" InputGestureText="Ctrl+S"/>
                         <MenuItem Header="Zapisz jako..." InputGestureText="Ctrl+Shift+S"/>
-                        <MenuItem Header="Drukuj..." InputGestureText="Ctrl+P"/>
+                        <MenuItem Header="Drukuj..." Click="Drukuj_Click" InputGestureText="Ctrl+P"/>
                         <Separator/>
                         <MenuItem Header="Zamknij" Click="Zamknij_Click" InputGestureText="Alt+F4"/>
                     </MenuItem>
