@@ -310,14 +310,17 @@ namespace HarmonyAnalyser
 
                                 if (j != 0)
                                 {
+                                    if (j == _chordManager.Chords.Count - 1)
+                                        chordElement.SubchordsMask.X2 = xShifted;
+
                                     if (_chordManager.Chords[j - 1].Element.SubchordsMask.Y == yOffset)
                                         _chordManager.Chords[j - 1].Element.SubchordsMask.X2 = chordElement.SubchordsMask.X1;
                                     else
                                         _chordManager.Chords[j - 1].Element.SubchordsMask.X2 = xLimit;
-
-                                    if (j == _chordManager.Chords.Count - 1)
-                                        chordElement.SubchordsMask.X2 = xShifted;
                                 }
+
+                                if (j == _chordManager.Chords.Count - 1)
+                                    chordElement.SubchordsMask.X2 = xShifted;
 
                                 _chordManager.Chords[j].Element = chordElement;
 
@@ -1246,7 +1249,7 @@ namespace HarmonyAnalyser
         {
             var text = chord.Chord.Name;
 
-            if (chord.Chord.BassNote != chord.Chord.RootNote && chord.Chord.BassNote != null)
+            if (chord.Chord.BassNote != chord.Chord.RootNote && chord.Chord.BassNote != null && chord.Chord.Name != "?")
                 text += $"/{chord.Chord.BassNote}";
 
             TextBlock chordName = new TextBlock
