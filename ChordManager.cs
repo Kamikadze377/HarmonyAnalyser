@@ -796,11 +796,22 @@ namespace HarmonyAnalyser
 
                         if (belongsToChord)
                         {
-                            if (i == startPointIndex)
-                                chords[chordIndex].StartPoint = subchords[i].Point;
+                            if (chordIndex > chords.Count - 1)
+                            {
+                                if (i == startPointIndex)
+                                    chords[chordIndex - 1].StartPoint = subchords[i].Point;
 
-                            chords[chordIndex].Subchords.Add(subchords[i]);
-                            subchords[i].Chord = chords[chordIndex];
+                                chords[chordIndex - 1].Subchords.Add(subchords[i]);
+                                subchords[i].Chord = chords[chordIndex - 1];
+                            }
+                            else
+                            {
+                                if (i == startPointIndex)
+                                    chords[chordIndex].StartPoint = subchords[i].Point;
+
+                                chords[chordIndex].Subchords.Add(subchords[i]);
+                                subchords[i].Chord = chords[chordIndex];
+                            }
                         }
                         else   // Podakord nie pasuje do akordu.
                         {
@@ -808,18 +819,21 @@ namespace HarmonyAnalyser
                                 return null;    
                             else
                             {
-                                chords[chordIndex].EndPoint = subchords[i - 1].Point;
+                                if (chordIndex <= chords.Count - 1)
+                                    chords[chordIndex].EndPoint = subchords[i - 1].Point;
 
                                 Chord chord = new Chord
-                                {
-                                    Name = "?",
-                                    StartPoint = subchords[i].Point,
-                                    EndPoint = subchords[i].Point,
-                                    MeasureNumber = subchords[i].MeasureNumber,
-                                };
+                                    {
+                                        Name = "?",
+                                        StartPoint = subchords[i].Point,
+                                        EndPoint = subchords[i].Point,
+                                        MeasureNumber = subchords[i].MeasureNumber,
+                                    };
 
                                 chord.Subchords.Add(subchords[i]);
                                 subchords[i].Chord = chord;
+                                steps = GetSubchordSteps(subchords[i]);
+                                steps = SortChordSteps(steps);
 
                                 chords.Add(chord);
 
@@ -854,7 +868,10 @@ namespace HarmonyAnalyser
                     }
                 }
 
-                chords[chordIndex].EndPoint = subchords[subchords.Count - 1].Point;
+                if (chordIndex > chords.Count - 1)
+                    chords[chordIndex - 1].EndPoint = subchords[subchords.Count - 1].Point;
+                else
+                    chords[chordIndex].EndPoint = subchords[subchords.Count - 1].Point;
             }
             else if (incompleteChords && chords.Count == 0 && endPointIndex == subchords.Count - 1) // Niepełne podakordy, brak pełnych akordów
             {
