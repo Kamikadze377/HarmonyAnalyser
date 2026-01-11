@@ -666,9 +666,9 @@ namespace HarmonyAnalyser
             int endPointIndex = -1;
             bool incompleteChords = false;
 
-            goto analysis;
+            goto download;
 
-            analysis:
+            download:
 
             endPointIndex++;
 
@@ -722,6 +722,10 @@ namespace HarmonyAnalyser
                 }
             }
 
+            goto analysis;
+
+            analysis:
+
             if (!incompleteChords && chords.Count > chordIndex && endPointIndex == subchords.Count - 1) // Brak niepełnych podakordów, identyczne pełne podakordy.
             {
                 for (int i = startPointIndex; i < subchords.Count; i++)
@@ -734,6 +738,10 @@ namespace HarmonyAnalyser
             }
             else if (incompleteChords && chords.Count > chordIndex && endPointIndex == subchords.Count - 1) // Niepełne podakordy, takie same pełne podakordy.
             {
+                goto condition2;
+
+                condition2:
+
                 bool belongsToChord;
                 string subchordStep;
 
@@ -806,24 +814,41 @@ namespace HarmonyAnalyser
                                 {
                                     Name = "?",
                                     StartPoint = subchords[i].Point,
-                                    EndPoint = subchords[subchords.Count - 1].Point,
+                                    EndPoint = subchords[i].Point,
                                     MeasureNumber = subchords[i].MeasureNumber,
                                 };
 
-                                for (int j = i; j <= endPointIndex; j++)
-                                {
-                                    chord.Subchords.Add(subchords[j]);
-                                    subchords[j].Chord = chord;
-                                }
+                                chord.Subchords.Add(subchords[i]);
+                                subchords[i].Chord = chord;
 
                                 chords.Add(chord);
 
-                                return IncludeBass(chords);
+                                if (i < subchords.Count - 1)
+                                {
+                                    startPointIndex = i + 1;
+                                    chordIndex = chords.Count;
+                                    goto condition2;
+                                }
+                                else
+                                    return IncludeBass(chords);
                             }
                         }
                     }
                     else
                     {
+                        if (chordIndex > chords.Count - 1)
+                        {
+                            Chord chord = new Chord
+                            {
+                                Name = subchords[i].Name,
+                                StartPoint = subchords[i].Point,
+                                MeasureNumber = subchords[i].MeasureNumber,
+                                RootNote = subchords[i].RootNote
+                            };
+
+                            chords.Add(chord);
+                        }
+                        
                         chords[chordIndex].Subchords.Add(subchords[i]);
                         subchords[i].Chord = chords[chordIndex];
                     }
@@ -866,7 +891,7 @@ namespace HarmonyAnalyser
                 chordIndex++;
 
                 if (chordIndex < subchords.Count)
-                    goto analysis;
+                    goto download;
             }
             else if (incompleteChords && chords.Count > chordIndex && endPointIndex < subchords.Count - 1) // Niepełne podakordy, identyczne pełne podakordy (niekompletny takt)
             {
@@ -952,7 +977,7 @@ namespace HarmonyAnalyser
                             chords.Add(chord);
 
                             chordIndex++;
-                            goto analysis;
+                            goto download;
                         }
                     }
                     else
@@ -965,7 +990,7 @@ namespace HarmonyAnalyser
                 chords[chordIndex].EndPoint = subchords[endPointIndex].Point;
 
                 chordIndex++;
-                goto analysis;
+                goto download;
             }
             else
             {
