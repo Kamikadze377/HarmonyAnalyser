@@ -19,6 +19,12 @@ namespace HarmonyAnalyser
             _score = score;
         }
 
+        // Do testów
+        public ChordManager()
+        {
+            _score = null!;
+        }
+
         public class Subchord
         {
             public string Name { get; set; }
@@ -38,7 +44,7 @@ namespace HarmonyAnalyser
         public class Chord
         {
             public string Name { get; set; }
-            public int StartPoint { get; set;}
+            public int StartPoint { get; set; }
             public int EndPoint { get; set; }
             public int MeasureNumber { get; set; }
             public List<ChordStep> Steps { get; set; } = new List<ChordStep>();
@@ -89,7 +95,7 @@ namespace HarmonyAnalyser
             foreach (var part in _score.Parts)
             {
                 int barNumber = 0;
-                
+
                 foreach (var measure in part.Measures)
                 {
                     barNumber++;
@@ -177,7 +183,9 @@ namespace HarmonyAnalyser
                                 {
                                     Step = measure.Notes[j].Pitch.Step,
                                     Octave = measure.Notes[j].Pitch.Octave,
-                                    Alter = 0
+                                    Alter = 0,
+                                    MeasureNumber = measure.Number,
+                                    Point = bassPoint
                                 };
 
                                 if (measure.Notes[j].Chord != null)
@@ -251,7 +259,9 @@ namespace HarmonyAnalyser
                                 {
                                     Step = measure.Notes[i].Pitch.Step,
                                     Octave = measure.Notes[i].Pitch.Octave,
-                                    Alter = 0
+                                    Alter = 0,
+                                    MeasureNumber = measure.Number,
+                                    Point = treblePoint
                                 };
 
                                 if (measure.Notes[i].Chord != null)
@@ -321,7 +331,9 @@ namespace HarmonyAnalyser
                                     {
                                         Step = measure.Notes[j].Pitch.Step,
                                         Octave = measure.Notes[j].Pitch.Octave,
-                                        Alter = 0
+                                        Alter = 0,
+                                        MeasureNumber = measure.Number,
+                                        Point = bassPoint
                                     };
 
                                     if (measure.Notes[j].Chord != null)
@@ -365,7 +377,9 @@ namespace HarmonyAnalyser
                                     {
                                         Step = measure.Notes[i].Pitch.Step,
                                         Octave = measure.Notes[i].Pitch.Octave,
-                                        Alter = 0
+                                        Alter = 0,
+                                        MeasureNumber = measure.Number,
+                                        Point = treblePoint
                                     };
 
                                     if (measure.Notes[i].Chord != null)
@@ -429,7 +443,9 @@ namespace HarmonyAnalyser
                                     {
                                         Step = measure.Notes[jBack].Pitch.Step,
                                         Octave = measure.Notes[jBack].Pitch.Octave,
-                                        Alter = 0
+                                        Alter = 0,
+                                        MeasureNumber = measure.Number,
+                                        Point = bassPoint
                                     };
 
                                     if (measure.Notes[jBack].Chord != null)
@@ -462,7 +478,9 @@ namespace HarmonyAnalyser
                                     {
                                         Step = measure.Notes[i].Pitch.Step,
                                         Octave = measure.Notes[i].Pitch.Octave,
-                                        Alter = 0
+                                        Alter = 0,
+                                        MeasureNumber = measure.Number,
+                                        Point = treblePoint
                                     };
 
                                     if (measure.Notes[i].Chord != null)
@@ -519,7 +537,9 @@ namespace HarmonyAnalyser
                                     {
                                         Step = measure.Notes[j].Pitch.Step,
                                         Octave = measure.Notes[j].Pitch.Octave,
-                                        Alter = 0
+                                        Alter = 0,
+                                        MeasureNumber = measure.Number,
+                                        Point = bassPoint
                                     };
 
                                     if (measure.Notes[j].Chord != null)
@@ -559,7 +579,9 @@ namespace HarmonyAnalyser
                                     {
                                         Step = measure.Notes[iBack].Pitch.Step,
                                         Octave = measure.Notes[iBack].Pitch.Octave,
-                                        Alter = 0
+                                        Alter = 0,
+                                        MeasureNumber = measure.Number,
+                                        Point = treblePoint
                                     };
 
                                     if (measure.Notes[iBack].Chord != null)
@@ -662,377 +684,205 @@ namespace HarmonyAnalyser
             List<Chord> chords = new List<Chord>();
             List<string> steps = new List<string>();
             int chordIndex = 0;
-            int startPointIndex = 0;
-            int endPointIndex = -1;
-            bool incompleteChords = false;
 
-            goto download;
-
-            download:
-
-            endPointIndex++;
-
-            for (int i = endPointIndex; i < subchords.Count; i++)
+            for (int i = 0; i < subchords.Count; i++)
             {
-                if (chords.Count == chordIndex && subchords[i].Name.ToArray()[0] != '(')
+                // Pierwszy podakord
+                if (i == 0)
                 {
                     Chord chord = new Chord
                     {
-                        Name = subchords[i].Name,
                         StartPoint = subchords[i].Point,
                         MeasureNumber = subchords[i].MeasureNumber,
-                        RootNote = subchords[i].RootNote
+                        RootNote = subchords[i].RootNote,
+                        EndPoint = subchords[i].Point
                     };
 
+                    chord.Subchords.Add(subchords[i]);
                     chords.Add(chord);
-                    steps = GetSubchordSteps(subchords[i]);
-                    steps = SortChordSteps(steps);
-                        
-                    if (startPointIndex != endPointIndex)
-                        startPointIndex = i;
+                    subchords[i].Chord = chord;
+                    steps.AddRange(SortChordSteps(GetSubchordSteps(subchords[i])));
 
-                    if (i == subchords.Count - 1)
+                    if (steps.Count >= 3)   // Czy pierwszy podakord to pełny akord?
                     {
+                        chords[chordIndex].Name = subchords[i].Name;
+                    }
+                    else
+                    {
+                        chords[chordIndex].Name = "?";
+                    }
+                }
+
+                // Pozostałe podakordy
+                else
+                {
+                    if (steps.Count < 3)
+                    {
+                        chords[chordIndex].Subchords.Add(subchords[i]);
                         chords[chordIndex].EndPoint = subchords[i].Point;
-                        endPointIndex = i;
-                    }
 
-                    continue;
-                }
-                else if (chords.Count > chordIndex && subchords[i].Name.ToArray()[0] != '(' && !subchords[i].IsRepeated)
-                {
-                    if (!(i > endPointIndex + 1 && CheckChordAffilliationBySteps(GetSubchordSteps(subchords[i]), steps)))  // Pierwsze trzy składniki nie są identyczne w porównaniu do poprzedniego akordu.
-                    {
-                        chords[chordIndex].EndPoint = subchords[i - 1].Point;
-                        endPointIndex = i - 1;
-                        break;
-                    }
-                }
-                else if (subchords[i].Name.ToArray()[0] == '(')
-                {
-                    incompleteChords = true;
-                    if (i == endPointIndex)
-                        startPointIndex = i;
-                }
-                
-                if (i == subchords.Count - 1 && chords.Count > chordIndex)
-                {
-                    chords[chordIndex].EndPoint = subchords[i].Point;
-                    endPointIndex = i;
-                }
-            }
+                        subchords[i].Chord = chords[chordIndex];
+                        steps.AddRange(GetSubchordSteps(subchords[i]));
+                        steps = SortChordSteps(steps);
 
-            goto analysis;
-
-            analysis:
-
-            if (!incompleteChords && chords.Count > chordIndex && endPointIndex == subchords.Count - 1) // Brak niepełnych podakordów, identyczne pełne podakordy.
-            {
-                for (int i = startPointIndex; i < subchords.Count; i++)
-                {
-                    chords[chordIndex].Subchords.Add(subchords[i]);
-                    subchords[i].Chord = chords[chordIndex];
-                }
-
-                return IncludeBass(chords);
-            }
-            else if (incompleteChords && chords.Count > chordIndex && endPointIndex == subchords.Count - 1) // Niepełne podakordy, takie same pełne podakordy.
-            {
-                goto condition2;
-
-                condition2:
-
-                bool belongsToChord;
-                string subchordStep;
-
-                for (int i = startPointIndex; i < subchords.Count; i++)
-                {
-                    belongsToChord = false;
-
-                    if (subchords[i].Name.ToArray()[0] == '(')
-                    {
-                        for (int j = 0; j < GetSubchordSteps(subchords[i]).Count; j++)  // Sprawdzenie, czy dźwięki niepełnego podakordu należą do obranego akordu.
+                        if (steps.Count < 3)
                         {
-                            subchordStep = SortChordSteps(GetSubchordSteps(subchords[i]))[j];
-                            belongsToChord = false;
-
-                            for (int k = 0; k < steps.Count; k++)
-                            {
-                                if (subchordStep == steps[k])
-                                {
-                                    belongsToChord = true;
-                                    break;
-                                }
-                            }
-
-                            if (belongsToChord)
-                                continue;
-                            else
-                            {
-                                List<string> modifiedSteps = new List<string>(); // Sprawdzenie, czy dźwięk niepełnego podakordu stanowi septymę lub nonę akordu (w przyszłości także undecymę lub tercdecymę akordu).
-                                for (int l = 0; l < steps.Count; l++)
-                                    modifiedSteps.Add(steps[l]);
-                                modifiedSteps.Add(subchordStep);
-                                modifiedSteps = SortChordSteps(modifiedSteps);
-                                string newChordName = GetChordName(modifiedSteps, steps[0]);
-                                if (newChordName.ToArray()[0] != '(' && newChordName.ToArray()[0] != '?')
-                                {
-                                    chords[chordIndex].Name = newChordName;
-                                    steps.Add(subchordStep);
-                                    steps = SortChordSteps(steps);
-                                    belongsToChord = true;
-                                }
-                                else
-                                {
-                                    belongsToChord = false;
-                                }
-
-                                if (belongsToChord)
-                                    continue;
-                                else
-                                    break;
-                            }
+                            chords[chordIndex].Name = "?";
+                            chords[chordIndex].RootNote = steps[0];
                         }
-
-                        if (belongsToChord)
+                        else
                         {
-                            if (chordIndex > chords.Count - 1)
-                            {
-                                if (i == startPointIndex)
-                                    chords[chordIndex - 1].StartPoint = subchords[i].Point;
+                            chords[chordIndex].Name = GetChordName(steps, steps[0]);
+                            chords[chordIndex].RootNote = GetChordName(steps, steps[0], true);
+                        }
+                    }
+                    else
+                    {
+                        var subchordsSteps = SortChordSteps(GetSubchordSteps(subchords[i]));
 
-                                chords[chordIndex - 1].Subchords.Add(subchords[i]);
-                                subchords[i].Chord = chords[chordIndex - 1];
-                            }
-                            else
+                        if (subchordsSteps.Count == steps.Count)
+                        {
+                            if (CheckChordAffilliationBySteps(subchordsSteps, steps))
                             {
-                                if (i == startPointIndex)
-                                    chords[chordIndex].StartPoint = subchords[i].Point;
-
                                 chords[chordIndex].Subchords.Add(subchords[i]);
+                                chords[chordIndex].EndPoint = subchords[i].Point;
+
                                 subchords[i].Chord = chords[chordIndex];
                             }
-                        }
-                        else   // Podakord nie pasuje do akordu.
-                        {
-                            if (!returnNotNull)
-                                return null;    
                             else
                             {
-                                if (chordIndex <= chords.Count - 1)
-                                    chords[chordIndex].EndPoint = subchords[i - 1].Point;
+                                var newSteps = steps;
+                                newSteps.AddRange(subchordsSteps);
+                                newSteps = SortChordSteps(newSteps);
+                                var newName = GetChordName(newSteps, newSteps[0]);
 
-                                Chord chord = new Chord
+                                // Czy podakord stanowi rozszerzenie akordu?
+                                if (newName.ToArray()[0] == chords[chordIndex].Name.ToArray()[0] ||
+                                    ((chords[chordIndex].Name.ToArray()[0] == '?' || chords[chordIndex].Name.ToArray()[0] == '(') && (newName.ToArray()[0] != '?' && newName.ToArray()[0] != '(')))
+                                {
+                                    chords[chordIndex].Subchords.Add(subchords[i]);
+                                    chords[chordIndex].Name = newName;
+                                    chords[chordIndex].RootNote = GetChordName(newSteps, newSteps[0], true);
+                                    chords[chordIndex].EndPoint = subchords[i].Point;
+
+                                    subchords[i].Chord = chords[chordIndex];
+                                    steps = newSteps;
+                                }
+                                else
+                                {
+                                    Chord newChord = new Chord
                                     {
-                                        Name = "?",
                                         StartPoint = subchords[i].Point,
-                                        EndPoint = subchords[i].Point,
+                                        Name = subchords[i].Name,
                                         MeasureNumber = subchords[i].MeasureNumber,
+                                        RootNote = subchords[i].RootNote,
+                                        EndPoint = subchords[i].Point
                                     };
 
-                                chord.Subchords.Add(subchords[i]);
-                                subchords[i].Chord = chord;
-                                steps = GetSubchordSteps(subchords[i]);
-                                steps = SortChordSteps(steps);
-
-                                chords.Add(chord);
-
-                                if (i < subchords.Count - 1)
+                                    newChord.Subchords.Add(subchords[i]);
+                                    chords.Add(newChord);
+                                    chordIndex++;
+                                    subchords[i].Chord = newChord;
+                                    steps = SortChordSteps(GetSubchordSteps(subchords[i]));
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (subchordsSteps.Count < steps.Count)
+                            {
+                                if (CheckChordAffilliationBySteps(subchordsSteps, steps))
                                 {
-                                    startPointIndex = i + 1;
-                                    chordIndex = chords.Count;
-                                    goto condition2;
+                                    chords[chordIndex].Subchords.Add(subchords[i]);
+                                    chords[chordIndex].EndPoint = subchords[i].Point;
+
+                                    subchords[i].Chord = chords[chordIndex];
                                 }
                                 else
-                                    return IncludeBass(chords);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (chordIndex > chords.Count - 1)
-                        {
-                            Chord chord = new Chord
-                            {
-                                Name = subchords[i].Name,
-                                StartPoint = subchords[i].Point,
-                                MeasureNumber = subchords[i].MeasureNumber,
-                                RootNote = subchords[i].RootNote
-                            };
-
-                            chords.Add(chord);
-                        }
-                        
-                        chords[chordIndex].Subchords.Add(subchords[i]);
-                        subchords[i].Chord = chords[chordIndex];
-                    }
-                }
-
-                if (chordIndex > chords.Count - 1)
-                    chords[chordIndex - 1].EndPoint = subchords[subchords.Count - 1].Point;
-                else
-                    chords[chordIndex].EndPoint = subchords[subchords.Count - 1].Point;
-            }
-            else if (incompleteChords && chords.Count == 0 && endPointIndex == subchords.Count - 1) // Niepełne podakordy, brak pełnych akordów
-            {
-                if (!returnNotNull)
-                    return null;
-                else
-                {
-                    Chord chord = new Chord
-                    {
-                        Name = "?",
-                        StartPoint = subchords[chordIndex].Point,
-                        EndPoint = subchords[subchords.Count - 1].Point,
-                        MeasureNumber = subchords[chordIndex].MeasureNumber,
-                    };
-
-                    chord.Subchords.AddRange(subchords);
-
-                    foreach (var subchord in subchords)
-                        subchord.Chord = chord;
-
-                    chords.Add(chord);
-
-                    return IncludeBass(chords);
-                }
-            }
-            else if (!incompleteChords && chords.Count > 0 && endPointIndex < subchords.Count - 1)  // Różne pełne podakordy
-            {
-                for (int i = startPointIndex; i < endPointIndex + 1; i++)
-                {
-                    chords[chordIndex].Subchords.Add(subchords[i]);
-                    subchords[i].Chord = chords[chordIndex];
-                }
-
-                chordIndex++;
-
-                if (chordIndex < subchords.Count)
-                    goto download;
-            }
-            else if (incompleteChords && chords.Count > chordIndex && endPointIndex < subchords.Count - 1) // Niepełne podakordy, identyczne pełne podakordy (niekompletny takt)
-            {
-                bool belongsToChord;
-                string subchordStep;
-
-                for (int i = startPointIndex; i <= endPointIndex; i++)
-                {
-                    belongsToChord = false;
-
-                    if (subchords[i].Name.ToArray()[0] == '(' || subchords[i].Name == "?")
-                    {
-                        for (int j = 0; j < GetSubchordSteps(subchords[i]).Count; j++)  // Sprawdzenie, czy dźwięki niepełnego podakordu należą do obranego akordu.
-                        {
-                            subchordStep = SortChordSteps(GetSubchordSteps(subchords[i]))[j];
-                            belongsToChord = false;
-
-                            for (int k = 0; k < steps.Count; k++)
-                            {
-                                if (subchordStep == steps[k])
                                 {
-                                    belongsToChord = true;
-                                    break;
+                                    var newSteps = steps;
+                                    newSteps.AddRange(subchordsSteps);
+                                    newSteps = SortChordSteps(newSteps);
+                                    var newName = GetChordName(newSteps, newSteps[0]);
+
+                                    // Czy podakord stanowi rozszerzenie akordu?
+                                    if (newName.ToArray()[0] == chords[chordIndex].Name.ToArray()[0] ||
+                                    ((chords[chordIndex].Name.ToArray()[0] == '?' || chords[chordIndex].Name.ToArray()[0] == '(') && (newName.ToArray()[0] != '?' && newName.ToArray()[0] != '(')))
+                                    {
+                                        chords[chordIndex].Subchords.Add(subchords[i]);
+                                        chords[chordIndex].Name = newName;
+                                        chords[chordIndex].RootNote = GetChordName(newSteps, newSteps[0], true);
+                                        chords[chordIndex].EndPoint = subchords[i].Point;
+
+                                        subchords[i].Chord = chords[chordIndex];
+                                        steps = newSteps;
+                                    }
+                                    else
+                                    {
+                                        Chord newChord = new Chord
+                                        {
+                                            StartPoint = subchords[i].Point,
+                                            MeasureNumber = subchords[i].MeasureNumber,
+                                            RootNote = subchords[i].RootNote,
+                                            EndPoint = subchords[i].Point
+                                        };
+
+                                        newChord.Subchords.Add(subchords[i]);
+                                        chords.Add(newChord);
+                                        chordIndex++;
+                                        subchords[i].Chord = newChord;
+                                        steps = SortChordSteps(GetSubchordSteps(subchords[i]));
+
+                                        if (steps.Count >= 3)
+                                        {
+                                            chords[chordIndex].Name = subchords[i].Name;
+                                        }
+                                        else
+                                        {
+                                            chords[chordIndex].Name = "?";
+                                        }
+                                    }
                                 }
                             }
-
-                            if (belongsToChord)
-                                continue;
                             else
                             {
-                                List<string> modifiedSteps = new List<string>(); // Sprawdzenie, czy dźwięk niepełnego podakordu stanowi septymę lub nonę akordu (w przyszłości także undecymę lub tercdecymę akordu).
-                                for (int l = 0; l < steps.Count; l++)
-                                    modifiedSteps.Add(steps[l]);
-                                modifiedSteps.Add(subchordStep);
-                                modifiedSteps = SortChordSteps(modifiedSteps);
-                                string newChordName = GetChordName(modifiedSteps, steps[0]);
-                                if (newChordName.ToArray()[0] != '(' && newChordName.ToArray()[0] != '?')
+                                var newSteps = steps;
+                                newSteps.AddRange(subchordsSteps);
+                                newSteps = SortChordSteps(newSteps);
+                                var newName = GetChordName(newSteps, newSteps[0]);
+
+                                // Czy podakord stanowi rozszerzenie akordu?
+                                if (newName.ToArray()[0] == chords[chordIndex].Name.ToArray()[0] || 
+                                    ((chords[chordIndex].Name.ToArray()[0] == '?' || chords[chordIndex].Name.ToArray()[0] == '(') && (newName.ToArray()[0] != '?' && newName.ToArray()[0] != '(')))
                                 {
-                                    chords[chordIndex].Name = newChordName;
-                                    steps.Add(subchordStep);
-                                    steps = SortChordSteps(steps);
-                                    belongsToChord = true;
+                                    chords[chordIndex].Subchords.Add(subchords[i]);
+                                    chords[chordIndex].Name = newName;
+                                    chords[chordIndex].RootNote = GetChordName(newSteps, newSteps[0], true);
+                                    chords[chordIndex].EndPoint = subchords[i].Point;
+
+                                    subchords[i].Chord = chords[chordIndex];
+                                    steps = newSteps;
                                 }
                                 else
                                 {
-                                    belongsToChord = false;
+                                    Chord newChord = new Chord
+                                    {
+                                        StartPoint = subchords[i].Point,
+                                        Name = subchords[i].Name,
+                                        MeasureNumber = subchords[i].MeasureNumber,
+                                        RootNote = subchords[i].RootNote,
+                                        EndPoint = subchords[i].Point
+                                    };
+
+                                    newChord.Subchords.Add(subchords[i]);
+                                    chords.Add(newChord);
+                                    chordIndex++;
+                                    subchords[i].Chord = newChord;
+                                    steps = SortChordSteps(GetSubchordSteps(subchords[i]));
                                 }
-
-                                if (belongsToChord)
-                                    continue;
-                                else
-                                    break;
                             }
                         }
-
-                        if (belongsToChord)
-                        {
-                            if (i == startPointIndex)
-                                chords[chordIndex].StartPoint = subchords[i].Point;
-
-                            chords[chordIndex].Subchords.Add(subchords[i]);
-                            subchords[i].Chord = chords[chordIndex];
-                        }
-                        else   // Podakord nie pasuje do akordu.
-                        {
-                            chords[chordIndex].EndPoint = subchords[i - 1].Point;
-                            chordIndex++;
-
-                            Chord chord = new Chord
-                            {
-                                Name = "?",
-                                StartPoint = subchords[i].Point,
-                                EndPoint = subchords[endPointIndex].Point,
-                                MeasureNumber = subchords[i].MeasureNumber,
-                            };
-
-                            for (int j = i; j <= endPointIndex; j++)
-                            {
-                                chord.Subchords.Add(subchords[j]);
-                                subchords[j].Chord = chord;
-                            }
-
-                            chords.Add(chord);
-
-                            chordIndex++;
-                            goto download;
-                        }
                     }
-                    else
-                    {
-                        chords[chordIndex].Subchords.Add(subchords[i]);
-                        subchords[i].Chord = chords[chordIndex];
-                    }
-                }
-
-                chords[chordIndex].EndPoint = subchords[endPointIndex].Point;
-
-                chordIndex++;
-                goto download;
-            }
-            else
-            {
-                if (!returnNotNull)
-                    return null;
-                else
-                {
-                    chords.Clear();
-
-                    Chord chord = new Chord
-                    {
-                        Name = "?",
-                        StartPoint = subchords[0].Point,
-                        EndPoint = subchords[subchords.Count - 1].Point,
-                        MeasureNumber = subchords[0].MeasureNumber,
-                    };
-
-                    chord.Subchords.AddRange(subchords);
-
-                    foreach (var subchord in subchords)
-                        subchord.Chord = chord;
-
-                    chords.Add(chord);
-
-                    return chords;
                 }
             }
 
@@ -1043,6 +893,8 @@ namespace HarmonyAnalyser
         {
             bool isBassDifferent;
             bool foreignNote;
+
+            beginning:
 
             for (int i = 0; i < chords.Count; i++)
             {
@@ -1063,8 +915,8 @@ namespace HarmonyAnalyser
 
                         // Sprawdzenie, czy w basie znajdują się dźwięki obce.
                         var stepsExceptBass = EraseBassFromSubchordSteps(SortChordSteps(GetSubchordSteps(subchords[j])), subchords[j].BassNote);
-                        
-                        if (GetChordName(stepsExceptBass, subchords[j].BassNote).ToArray()[0] != '(' 
+
+                        if (GetChordName(stepsExceptBass, subchords[j].BassNote).ToArray()[0] != '('
                             && GetChordName(stepsExceptBass, subchords[j].BassNote) != "?")
                             foreignNote = true;
                     }
@@ -1075,28 +927,91 @@ namespace HarmonyAnalyser
                     {
                         var newChords = new List<Chord>();
 
-                        foreach (var subchord in subchords)
+                        for (int j = 0; j < subchords.Count; j++)
                         {
-                            subchord.IsRepeated = false;
-
-                            Chord chord = new Chord
+                            if (j > 0 && j < subchords.Count)
                             {
-                                Name = subchord.Name,
-                                BassNote = subchord.BassNote,
-                                RootNote = subchord.RootNote,
-                                StartPoint = subchord.Point,
-                                EndPoint = subchord.Point,
-                                MeasureNumber = subchord.MeasureNumber,
-                            };
+                                if (subchords[j - 1].BassNote == subchords[j].BassNote &&
+                                    subchords[j - 1].Name == subchords[j].Name && 
+                                    subchords[j - 1].RootNote == subchords[j].RootNote)
+                                {
+                                    subchords[j].IsRepeated = true;
+                                    
+                                    newChords[newChords.Count - 1].Subchords.Add(subchords[j]);
+                                    newChords[newChords.Count - 1].EndPoint = subchords[j].Point;
 
-                            chord.Subchords.Add(subchord);
-                            subchord.Chord = chord;
-                            newChords.Add(chord);
+                                    subchords[j].Chord = newChords[newChords.Count - 1];
+                                }
+                                else
+                                {
+                                    var subchord = subchords[j];
+
+                                    subchord.IsRepeated = false;
+
+                                    Chord chord = new Chord
+                                    {
+                                        Name = subchord.Name,
+                                        BassNote = subchord.BassNote,
+                                        RootNote = subchord.RootNote,
+                                        StartPoint = subchord.Point,
+                                        EndPoint = subchord.Point,
+                                        MeasureNumber = subchord.MeasureNumber,
+                                    };
+
+                                    chord.Subchords.Add(subchord);
+                                    subchord.Chord = chord;
+                                    newChords.Add(chord);
+                                }
+                            }
+                            else
+                            {
+                                var subchord = subchords[j];
+
+                                subchord.IsRepeated = false;
+
+                                Chord chord = new Chord
+                                {
+                                    Name = subchord.Name,
+                                    BassNote = subchord.BassNote,
+                                    RootNote = subchord.RootNote,
+                                    StartPoint = subchord.Point,
+                                    EndPoint = subchord.Point,
+                                    MeasureNumber = subchord.MeasureNumber,
+                                };
+
+                                chord.Subchords.Add(subchord);
+                                subchord.Chord = chord;
+                                newChords.Add(chord);
+                            }
                         }
 
-                        chords.Remove(chords[i]);
-                        newChords.AddRange(chords);
-                        chords = newChords;
+                        if (i == 0)
+                        {
+                            chords.Remove(chords[i]);
+                            newChords.AddRange(chords);
+                            chords = newChords;
+                        }
+                        else if (i > 0 && i < chords.Count - 1)
+                        {
+                            var remainingChords = new List<Chord>();
+
+                            for (int j = i + 1; j < chords.Count; j++)
+                                remainingChords.Add(chords[j]);
+
+                            chords.RemoveRange(i + 1, chords.Count - (i + 1));
+                            chords.Remove(chords[i]);
+
+                            chords.AddRange(chords);
+                            chords.AddRange(remainingChords);
+                        }
+                        else
+                        {
+                            chords.Remove(chords[i]);
+                            chords.AddRange(newChords);
+                        }
+
+                        if (i != chords.Count - 1)
+                            goto beginning;
                     }
                     else
                         chords[i].BassNote = null;
@@ -1108,7 +1023,7 @@ namespace HarmonyAnalyser
 
         public string IdentifySubchord(Subchord subchord)
         {
-            List <string> chordSteps = GetSubchordSteps(subchord);
+            List<string> chordSteps = GetSubchordSteps(subchord);
 
             chordSteps = SortChordSteps(chordSteps);
 
@@ -1140,92 +1055,90 @@ namespace HarmonyAnalyser
             return chordSteps;
         }
 
-        public List<int> GetSubchordIntervals(Subchord subchord)
+        public List<string> EraseRepeatedSteps(List<string> steps)
         {
-            return GetStepsIntervals(GetSubchordSteps(subchord));
-        }
+            List<string> noRepeatSteps = new List<string>();
 
-        public List<int> GetSubchordSemitones(Subchord subchord)
-        {
-            return GetStepsSemitones(GetSubchordSteps(subchord));
+            foreach (var step in steps)
+            {
+                bool repeat = false;
+
+                foreach (var noRepeatStep in noRepeatSteps)
+                {
+                    if (noRepeatStep == step)
+                    {
+                        repeat = true;
+                        break;
+                    }
+                }
+
+                if (!repeat)
+                    noRepeatSteps.Add(step);
+            }
+
+            return noRepeatSteps;
         }
 
         public List<string> SortChordSteps(List<string> chordSteps)
         {
+            chordSteps = EraseRepeatedSteps(chordSteps);
+
             if (chordSteps.Count < 3)
                 return chordSteps;
-
-            chordSteps = ClusterInOneOctave(chordSteps);
-            string chordStep;
-            List<int> chordIntervals = GetStepsIntervals(chordSteps);
-            List<int> initialChordIntervals = chordIntervals;
-            bool evenIntervals = false;
-
-            goto sort;
-
-            sort:
-
-            do
+            else
             {
-                for (int i = 0; i < chordIntervals.Count; i++)
+                string[] notes = { "C", "D", "E", "F", "G", "A", "B" };
+                List<string> initialSteps;
+                List<string> sortedSteps = new List<string>();
+                bool evenIntervals;
+
+                foreach (var chordStep in chordSteps)
                 {
-                    if (chordIntervals[i] % 2 != 1)
+                    int i = GetStepNumber(chordStep) - 1;
+
+                    sortedSteps.Clear();
+                    initialSteps = chordSteps.ToList();
+                    evenIntervals = false;
+
+                    do
                     {
-                        evenIntervals = true;
+                        foreach (var initialStep in initialSteps)
+                            if (initialStep == notes[i])
+                            {
+                                sortedSteps.Add(notes[i]);
+                                initialSteps.Remove(initialStep);
+                                break;
+                            }
 
-                        chordStep = chordSteps[0];
-                        chordSteps.Remove(chordSteps[0]);
-                        chordSteps.Add(chordStep);
-                        chordIntervals = GetStepsIntervals(chordSteps);
+                        i += 2;
 
+                         if (i > 6)
+                            i %= 7;
+                    }
+                    while (initialSteps.Count > 0);
+
+                    var intervals = GetStepsIntervals(sortedSteps);
+
+                    foreach (var interval in intervals)
+                        if (interval % 2 == 0)
+                            evenIntervals = true;
+
+                    if (evenIntervals)
+                        continue;
+                    else
+                    {
+                        chordSteps = sortedSteps;
                         break;
                     }
-
-                    evenIntervals = false;
                 }
             }
-            while (evenIntervals && !(chordIntervals.SequenceEqual(initialChordIntervals)));
 
             return chordSteps;
         }
 
-        public bool IsChordAboveOctave (List<string> chordSteps)
-        {
-            var intervalsInSemitones = GetStepsSemitones(chordSteps);
-            int sum = 0;
-
-            for (int i = 0; i < intervalsInSemitones.Count; i++)
-                sum += intervalsInSemitones[i];
-
-            if (sum <= 12)
-                return false;
-            else
-                return true;
-        }
-
-        public List<string> ClusterInOneOctave (List<string> chordSteps)
-        {
-            List<string> clusteredSteps = new List<string>();
-            string[] notes = { "C", "D", "E", "F", "G", "A", "B" };
-
-            for (int i = 0; i < notes.Length; i++)
-            {
-                for (int j = 0; j < chordSteps.Count; j++)
-                {
-                    if (chordSteps[j] == notes[i])
-                    {
-                        clusteredSteps.Add(notes[i]);
-                        break;
-                    }
-                }
-            }
-
-            return clusteredSteps;
-        }
-
         public string GetChordName(List<string> chordSteps, string bassNote, bool getRootNote = false)
         {
-            string chordName;
+            string chordName = "?";
             var chordIntervals = GetStepsIntervals(chordSteps);
             var chordSemitones = GetStepsSemitones(chordSteps);
             var chordDetailedIntervals = GetStepsDetailedIntervals(chordSteps);
@@ -1250,9 +1163,9 @@ namespace HarmonyAnalyser
                     else if ((chordSemitones[0] == 4 && chordSemitones[1] == 6) ||  // Niepełny akord septymowy
                         (chordSemitones[0] == 7 && chordSemitones[1] == 3))
                         chordName = $"({chordDetailedIntervals[0]},{chordDetailedIntervals[1]})";
-                    else if (chordSemitones[0] == 5 && chordSemitones[1] == 2)      // Akord zawieszony (tercja zastąpiona kwartą czystą)
+                    else if (chordSemitones[0] == 7 && chordSemitones[1] == 10)      // Akord zawieszony (tercja zastąpiona kwartą czystą)
                         chordName = $"{chordSteps[0]}sus4";
-                    else if (chordSemitones[0] == 2 && chordSemitones[1] == 5)      // Akord zawieszony (tercja zastąpiona sekundą wielką)
+                    else if (chordSemitones[0] == 7 && chordSemitones[1] == 7)      // Akord zawieszony (tercja zastąpiona sekundą wielką)
                         chordName = $"{chordSteps[0]}sus2";
                     else
                         goto default;
@@ -1314,10 +1227,17 @@ namespace HarmonyAnalyser
                     }
                     else
                     {
-                        var newChordName = GetChordName(SortChordSteps(EraseBassFromSubchordSteps(chordSteps, bassNote)), bassNote);
+                        var reducedSteps = new List<string>();
+                        reducedSteps.AddRange(chordSteps);
+                        SortChordSteps(EraseBassFromSubchordSteps(reducedSteps, bassNote));
 
-                        if (newChordName != "?" && newChordName.ToArray()[0] != '(')
-                            chordName = newChordName;
+                        if (reducedSteps.Count < chordSteps.Count)
+                        {
+                            var newChordName = GetChordName(reducedSteps, bassNote);
+
+                            if (newChordName != "?" && newChordName.ToArray()[0] != '(')
+                                chordName = newChordName;
+                        }
                         else
                             goto default;
                     }
@@ -1326,14 +1246,16 @@ namespace HarmonyAnalyser
 
                 case 4:
 
-                    if (chordSemitones[0] == 4 && chordSemitones[1] == 3 && chordSemitones[2] == 3 && chordSemitones[3] == 4)   // Akord durowy z noną wielką
+                    if (chordSemitones[0] == 4 && chordSemitones[1] == 3 && 
+                        ((chordSemitones[2] == 4 && chordSemitones[3] == 3) || (chordSemitones[2] == 3 && chordSemitones[3] == 4)))   // Akord durowy z noną wielką
                     {
                         if (chordSteps[4] == bassNote)
                             chordName = $"{chordSteps[0]}";
                         else
                             chordName = $"{chordSteps[0]}9";
                     }
-                    else if (chordSemitones[0] == 3 && chordSemitones[1] == 4 && chordSemitones[2] == 3 && chordSemitones[3] == 4)   // Akord molowy z noną wielką
+                    else if (chordSemitones[0] == 3 && chordSemitones[1] == 4 && 
+                        ((chordSemitones[2] == 3 && chordSemitones[3] == 4) || (chordSemitones[2] == 4 && chordSemitones[3] == 3)))   // Akord molowy z noną wielką
                     {
                         if (chordSteps[4] == bassNote)
                             chordName = $"{chordSteps[0]}m";
@@ -1342,12 +1264,7 @@ namespace HarmonyAnalyser
                     }
                     else
                     {
-                        var newChordName = GetChordName(SortChordSteps(EraseBassFromSubchordSteps(chordSteps, bassNote)), bassNote);
-
-                        if (newChordName != "?" && newChordName.ToArray()[0] != '(')
-                            chordName = newChordName;
-                        else
-                            goto default;
+                        goto default;
                     }
 
                     break;
@@ -1359,7 +1276,10 @@ namespace HarmonyAnalyser
             }
 
             if (getRootNote)
-                return chordSteps[0];
+            {
+                string root = chordName.ToArray()[0].ToString();
+                return root;
+            }
 
             return chordName;
         }
@@ -1425,7 +1345,7 @@ namespace HarmonyAnalyser
 
             for (int i = 0; i < chordSemitones.Count; i++)
             {
-                switch(chordSemitones[i])
+                switch (chordSemitones[i])
                 {
                     case 0:
                         chordDetailedIntervals.Add("1");
@@ -1468,7 +1388,7 @@ namespace HarmonyAnalyser
                         chordDetailedIntervals.Add("7<");
                         break;
                 }
-            }    
+            }
 
             return chordDetailedIntervals;
         }

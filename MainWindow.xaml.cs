@@ -16,6 +16,7 @@ namespace HarmonyAnalyser
     public partial class MainWindow : Window
     {
         private MusicRenderer musicRenderer;
+        private ChordManager chordManager;
 
         private WindowState _WindowState;
         private WindowStyle _WindowStyle;
@@ -44,7 +45,7 @@ namespace HarmonyAnalyser
 
                 if (score != null)
                 {
-                    ChordManager chordManager = new(score);
+                    chordManager = new(score);
                     musicRenderer = new(ScoreCanvas, score, chordManager, PianoKeyboard);
                     chordManager.ExtractSubchords();
                     chordManager.ExtractChords();
@@ -54,7 +55,7 @@ namespace HarmonyAnalyser
             }
         }
 
-        static ScorePartwise LoadMusicXml(string filePath)
+        private static ScorePartwise LoadMusicXml(string filePath)
         {
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
 
@@ -99,6 +100,113 @@ namespace HarmonyAnalyser
             }
 
             return null;
+        }
+
+        private void PianoKeyboardView_Checked(object sender, RoutedEventArgs e)
+        {
+            if (PianoKeyboard_Viewbox != null)
+                PianoKeyboard_Viewbox.Visibility = Visibility.Visible;
+        }
+
+        private void PianoKeyboardView_Unchecked(object sender, RoutedEventArgs e)
+        {
+            PianoKeyboard_Viewbox.Visibility = Visibility.Collapsed;
+        }
+
+        private void Zamknij_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+
+        private void OnMinimizeButtonClick(object sender, RoutedEventArgs e)
+        {
+            SystemCommands.MinimizeWindow(this);
+        }
+
+        private void OnMaximizeRestoreButtonClick(object sender, RoutedEventArgs e)
+        {
+            ToggleWindowState();
+        }
+
+        private void OnCloseButtonClick(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+
+        private void Drukuj_Click(object sender, RoutedEventArgs e)
+        {
+            PrintDialog printDialog = new PrintDialog();
+
+            if (printDialog.ShowDialog() == true)
+            {
+                ScoreCanvas.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                ScoreCanvas.Arrange(new Rect(ScoreCanvas.DesiredSize));
+
+                printDialog.PrintVisual(ScoreCanvas, "Harmony Analyser – partytura");
+            }
+        }
+
+        private void FullScreen_Checked(object sender, RoutedEventArgs e)
+        {
+            _WindowState = this.WindowState;
+            _WindowStyle = this.WindowStyle;
+
+            this.WindowState = WindowState.Normal;
+            this.WindowStyle = WindowStyle.None;
+            this.WindowState = WindowState.Maximized;
+        }
+
+        private void FullScreen_Unchecked(object sender, RoutedEventArgs e)
+        {
+            this.WindowStyle = _WindowStyle;
+            this.WindowState = _WindowState;
+        }
+
+        protected override void OnKeyDown(System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Escape)
+            {
+                this.WindowStyle = _WindowStyle;
+                this.WindowState = _WindowState;
+
+                if (FullScreen.IsChecked)
+                {
+                    FullScreen.IsChecked = false;
+                }
+            }
+
+            if (e.Key == System.Windows.Input.Key.F11)
+            {
+                if (!FullScreen.IsChecked)
+                {
+                    _WindowState = this.WindowState;
+                    _WindowStyle = this.WindowStyle;
+
+                    FullScreen.IsChecked = true;
+
+                    this.WindowState = WindowState.Normal;
+                    this.WindowStyle = WindowStyle.None;
+                    this.WindowState = WindowState.Maximized;
+                }
+                else
+                {
+                    this.WindowStyle = _WindowStyle;
+                    this.WindowState = _WindowState;
+
+                    if (FullScreen.IsChecked)
+                    {
+                        FullScreen.IsChecked = false;
+                    }
+                }
+            }
+
+            base.OnKeyDown(e);
+        }
+
+        private void MainArea_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            /* if (musicRenderer.SubchordSelection != null || musicRenderer.SelectedNote != null)
+                musicRenderer.UncheckSubchord(); */
         }
 
         private void OnSourceInitialized(object? sender, EventArgs e)
@@ -167,116 +275,9 @@ namespace HarmonyAnalyser
             }
         }
 
-        private void FullScreen_Checked(object sender, RoutedEventArgs e)
-        {
-            _WindowState = this.WindowState;
-            _WindowStyle = this.WindowStyle;
-
-            this.WindowState = WindowState.Normal;
-            this.WindowStyle = WindowStyle.None;
-            this.WindowState = WindowState.Maximized;
-        }
-
-        private void FullScreen_Unchecked(object sender, RoutedEventArgs e)
-        {
-            //this.WindowStyle = _WindowStyle;
-            //this.WindowState = _WindowState;
-        }
-
-        protected override void OnKeyDown(System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == System.Windows.Input.Key.Escape)
-            {
-                this.WindowStyle = _WindowStyle;
-                this.WindowState = _WindowState;
-
-                if (FullScreen.IsChecked)
-                {
-                    FullScreen.IsChecked = false;
-                }
-            }
-
-            if (e.Key == System.Windows.Input.Key.F11)
-            {
-                if (!FullScreen.IsChecked)
-                {
-                    _WindowState = this.WindowState;
-                    _WindowStyle = this.WindowStyle;
-
-                    FullScreen.IsChecked = true;
-
-                    this.WindowState = WindowState.Normal;
-                    this.WindowStyle = WindowStyle.None;
-                    this.WindowState = WindowState.Maximized;
-                }
-                else
-                {
-                    this.WindowStyle = _WindowStyle;
-                    this.WindowState = _WindowState;
-
-                    if (FullScreen.IsChecked)
-                    {
-                        FullScreen.IsChecked = false;
-                    }
-                }
-            }
-
-            base.OnKeyDown(e);
-        }
-
-        private void MainArea_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            /* if (musicRenderer.SubchordSelection != null || musicRenderer.SelectedNote != null)
-                musicRenderer.UncheckSubchord(); */
-        }
-
-        private void PianoKeyboardView_Checked(object sender, RoutedEventArgs e)
-        {
-            if (PianoKeyboard_Viewbox != null)
-                PianoKeyboard_Viewbox.Visibility = Visibility.Visible;
-        }
-
-        private void PianoKeyboardView_Unchecked(object sender, RoutedEventArgs e)
-        {
-            PianoKeyboard_Viewbox.Visibility = Visibility.Collapsed;
-        }
-
-        private void Zamknij_Click(object sender, RoutedEventArgs e)
-        {
-            this.Close();
-        }
-
-        private void OnMinimizeButtonClick(object sender, RoutedEventArgs e)
-        {
-            SystemCommands.MinimizeWindow(this);
-        }
-
-        private void OnMaximizeRestoreButtonClick(object sender, RoutedEventArgs e)
-        {
-            ToggleWindowState();
-        }
-
         private void maximizeRestoreButton_ToolTipOpening(object sender, ToolTipEventArgs e)
         {
             maximizeRestoreButton.ToolTip = WindowState == WindowState.Normal ? "Maximize" : "Restore";
-        }
-
-        private void OnCloseButtonClick(object sender, RoutedEventArgs e)
-        {
-            this.Close();
-        }
-
-        private void Drukuj_Click(object sender, RoutedEventArgs e)
-        {
-            PrintDialog printDialog = new PrintDialog();
-
-            if (printDialog.ShowDialog() == true)
-            {
-                ScoreCanvas.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                ScoreCanvas.Arrange(new Rect(ScoreCanvas.DesiredSize));
-
-                printDialog.PrintVisual(ScoreCanvas, "Harmony Analyser – partytura");
-            }
         }
     }
 }

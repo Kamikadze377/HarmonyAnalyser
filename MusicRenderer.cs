@@ -583,7 +583,6 @@ namespace HarmonyAnalyser
             _canvas.Children.Add(textBlock);
         }
 
-
         private TextBlock AddSymbol(string text, double left, double top, double fontSize, bool transparent = false)
         {
             TextBlock symbol = new TextBlock
@@ -1136,7 +1135,7 @@ namespace HarmonyAnalyser
             else
                 text = subchord.Subchord.Name;
 
-            if (subchord.Subchord.BassNote != subchord.Subchord.RootNote && subchord.Subchord.Name.ToArray()[0] != '(')
+            if (subchord.Subchord.BassNote != subchord.Subchord.RootNote && subchord.Subchord.Name.ToArray()[0] != '(' && subchord.Subchord.Name.ToArray()[0] != '?')
                 text += $"/{subchord.Subchord.BassNote}";
 
             TextBlock subchordName = new TextBlock
