@@ -679,7 +679,7 @@ namespace HarmonyAnalyser
             }
         }
 
-        public List<Chord> IdentifyChordsBySubchords(List<Subchord> subchords, bool returnNotNull = false)
+        private List<Chord> IdentifyChordsBySubchords(List<Subchord> subchords, bool returnNotNull = false)
         {
             List<Chord> chords = new List<Chord>();
             List<string> steps = new List<string>();
@@ -889,7 +889,7 @@ namespace HarmonyAnalyser
             return IncludeBass(chords);
         }
 
-        public List<Chord> IncludeBass(List<Chord> chords)
+        private List<Chord> IncludeBass(List<Chord> chords)
         {
             bool isBassDifferent;
             bool foreignNote;

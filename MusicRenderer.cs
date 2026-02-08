@@ -22,11 +22,7 @@ namespace HarmonyAnalyser
         private readonly double _systemSpacing = 227;
 
         private SubchordElement _selectedSubchord;
-        public SubchordElement SelectedSubchord => _selectedSubchord;
-
         private ChordElement _selectedChord;
-        public ChordElement SelectedChord => _selectedChord;
-
         public MusicRenderer(Canvas canvas)
         {
             _canvas = canvas;
@@ -1110,6 +1106,23 @@ namespace HarmonyAnalyser
             }
         }
 
+        public void DrawStaff(double x1, double x2, double y)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                Line line = new Line
+                {
+                    X1 = x1,
+                    Y1 = y + (i * 10),
+                    X2 = x2,
+                    Y2 = y + (i * 10),
+                    Stroke = Brushes.Black,
+                    StrokeThickness = 1
+                };
+                _canvas.Children.Add(line);
+            }
+        }
+
         public void AddSubchord(double x, double y)
         {
             TextBlock chord = new TextBlock
@@ -1633,23 +1646,6 @@ namespace HarmonyAnalyser
             }
 
             chord.Selection.Border.BeginAnimation(FrameworkElement.WidthProperty, changeWidthAnim);
-        }
-
-        public void DrawStaff(double x1, double x2, double y)
-        {
-            for (int i = 0; i < 5; i++)
-            {
-                Line line = new Line
-                {
-                    X1 = x1,
-                    Y1 = y + (i * 10),
-                    X2 = x2,
-                    Y2 = y + (i * 10),
-                    Stroke = Brushes.Black,
-                    StrokeThickness = 1
-                };
-                _canvas.Children.Add(line);
-            }
         }
     }
 }

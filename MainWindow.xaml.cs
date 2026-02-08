@@ -7,6 +7,7 @@ using System.Xml.Serialization;
 using System.Windows.Media;
 using System.IO.Compression;
 using System.Linq;
+using System.Windows.Input;
 
 namespace HarmonyAnalyser
 {
@@ -21,6 +22,13 @@ namespace HarmonyAnalyser
         private WindowState _WindowState;
         private WindowStyle _WindowStyle;
 
+        private ScaleTransform _zoomTransform = new ScaleTransform(1.0, 1.0);
+
+        private double _zoom = 1.0;
+        private const double ZoomStep = 0.1;
+        private const double ZoomMin = 0.4;
+        private const double ZoomMax = 2.5;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -28,6 +36,9 @@ namespace HarmonyAnalyser
             SourceInitialized += OnSourceInitialized;
             musicRenderer = new(ScoreCanvas);
             musicRenderer.DrawStartupScore();
+
+            ScoreCanvas.LayoutTransform = _zoomTransform;
+            Loaded += (_, _) => FitScoreToWindow();
         }
 
         private void Otworz_Click(object sender, RoutedEventArgs e)
@@ -201,6 +212,41 @@ namespace HarmonyAnalyser
             }
 
             base.OnKeyDown(e);
+        }
+
+        private void FitScoreToWindow()
+        {
+            if (ScoreCanvas.ActualWidth == 0)
+                return;
+
+            double availableWidth = ScoreScrollViewer.ViewportWidth;
+
+            if (availableWidth <= 0)
+                return;
+
+            double zoom = availableWidth / ScoreCanvas.ActualWidth * 0.95;
+
+            zoom = Math.Clamp(zoom, ZoomMin, ZoomMax);
+
+            _zoom = zoom;
+            _zoomTransform.ScaleX = _zoom;
+            _zoomTransform.ScaleY = _zoom;
+        }
+
+        private void MainArea_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            if ((Keyboard.Modifiers & ModifierKeys.Control) != ModifierKeys.Control)
+                return;
+
+            e.Handled = true;
+
+            if (e.Delta > 0)
+                _zoom = Math.Min(ZoomMax, _zoom + ZoomStep);
+            else
+                _zoom = Math.Max(ZoomMin, _zoom - ZoomStep);
+
+            _zoomTransform.ScaleX = _zoom;
+            _zoomTransform.ScaleY = _zoom;
         }
 
         private void MainArea_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)

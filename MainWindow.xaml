@@ -132,8 +132,8 @@
             </Button>
         </Grid>
 
-        <Grid x:Name="MainArea" Grid.Row="1" PreviewMouseLeftButtonDown="MainArea_PreviewMouseLeftButtonDown">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+        <Grid x:Name="MainArea" Grid.Row="1" PreviewMouseWheel="MainArea_PreviewMouseWheel" PreviewMouseLeftButtonDown="MainArea_PreviewMouseLeftButtonDown">
+            <ScrollViewer x:Name="ScoreScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                 <Canvas x:Name="ScoreCanvas" MinWidth="1440" Background="White" Margin="30" VerticalAlignment="Top"/>
             </ScrollViewer>
         </Grid>
