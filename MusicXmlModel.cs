@@ -112,9 +112,6 @@ namespace HarmonyAnalyser
 
     public class Note
     {
-        [XmlElement("rest")]
-        public string Rest { get; set; }
-
         [XmlElement("chord")]
         public string Chord { get; set; }
 
@@ -162,11 +159,5 @@ namespace HarmonyAnalyser
 
         [XmlElement("staff")]
         public int Staff { get; set; }
-    }
-
-    public class Rest
-    {
-        [XmlAttribute("measure")]
-        public string Measure { get; set; }
     }
 }

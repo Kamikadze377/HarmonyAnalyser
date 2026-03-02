@@ -19,11 +19,12 @@ namespace HarmonyAnalyser
         private MusicRenderer musicRenderer;
         private ChordManager chordManager;
 
+        // Okno
         private WindowState _WindowState;
         private WindowStyle _WindowStyle;
 
+        // Powiększenie arkusza nutowego
         private ScaleTransform _zoomTransform = new ScaleTransform(1.0, 1.0);
-
         private double _zoom = 1.0;
         private const double ZoomStep = 0.1;
         private const double ZoomMin = 0.4;
@@ -41,7 +42,7 @@ namespace HarmonyAnalyser
             Loaded += (_, _) => FitScoreToWindow();
         }
 
-        private void Otworz_Click(object sender, RoutedEventArgs e)
+        private void Open_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new Microsoft.Win32.OpenFileDialog();
             dialog.DefaultExt = ".xml";
@@ -62,6 +63,10 @@ namespace HarmonyAnalyser
                     chordManager.ExtractChords();
                     musicRenderer.DrawScore();
                     PianoKeyboard.ResetHighlight();
+
+                    // Reset powiększenia
+                    ScoreCanvas.LayoutTransform = _zoomTransform;
+                    FitScoreToWindow();
                 }
             }
         }
@@ -124,7 +129,7 @@ namespace HarmonyAnalyser
             PianoKeyboard_Viewbox.Visibility = Visibility.Collapsed;
         }
 
-        private void Zamknij_Click(object sender, RoutedEventArgs e)
+        private void Close_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
         }
@@ -144,7 +149,7 @@ namespace HarmonyAnalyser
             this.Close();
         }
 
-        private void Drukuj_Click(object sender, RoutedEventArgs e)
+        private void Print_Click(object sender, RoutedEventArgs e)
         {
             PrintDialog printDialog = new PrintDialog();
 

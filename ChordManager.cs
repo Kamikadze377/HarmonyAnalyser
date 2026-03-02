@@ -38,7 +38,6 @@ namespace HarmonyAnalyser
             public MusicRenderer.NoteElement NoteElement { get; set; }
 
             public bool IsRepeated { get; set; }
-            public bool IsChecked { get; set; }
         }
 
         public class Chord
@@ -639,10 +638,8 @@ namespace HarmonyAnalyser
                 for (int i = 1; i <= part.Measures.Count; i++)
                 {
                     List<Subchord> measureSubchords = new List<Subchord>();
-                    List<ChordStep> chordSteps = new List<ChordStep>();
-                    List<ChordNote> chordNotes = new List<ChordNote>();
 
-                    // Pobranie wszystkich podakordów z taktu
+                    // Pobranie wszystkich współbrzmień z taktu
                     foreach (var subchord in Subchords)
                     {
                         if (subchord.MeasureNumber == i)
@@ -651,9 +648,7 @@ namespace HarmonyAnalyser
                             break;
                     }
 
-                    var chords = IdentifyChordsBySubchords(measureSubchords, true); // Klasyfikacja nr 1 — według podakordów
-                    // Klasyfikacja nr 2 — według składników akordów
-                    // Klasyfikacja nr 3 - według basu
+                    var chords = IdentifyChordsBySubchords(measureSubchords); // Grupowanie współbrzmień
 
                     if (chords != null)
                         Chords.AddRange(chords);
@@ -679,7 +674,7 @@ namespace HarmonyAnalyser
             }
         }
 
-        private List<Chord> IdentifyChordsBySubchords(List<Subchord> subchords, bool returnNotNull = false)
+        public List<Chord> IdentifyChordsBySubchords(List<Subchord> subchords)
         {
             List<Chord> chords = new List<Chord>();
             List<string> steps = new List<string>();
@@ -751,7 +746,7 @@ namespace HarmonyAnalyser
                             }
                             else
                             {
-                                var newSteps = steps;
+                                var newSteps = new List<string>(steps);
                                 newSteps.AddRange(subchordsSteps);
                                 newSteps = SortChordSteps(newSteps);
                                 var newName = GetChordName(newSteps, newSteps[0]);
@@ -800,7 +795,7 @@ namespace HarmonyAnalyser
                                 }
                                 else
                                 {
-                                    var newSteps = steps;
+                                    var newSteps = new List<string>(steps);
                                     newSteps.AddRange(subchordsSteps);
                                     newSteps = SortChordSteps(newSteps);
                                     var newName = GetChordName(newSteps, newSteps[0]);
@@ -846,7 +841,7 @@ namespace HarmonyAnalyser
                             }
                             else
                             {
-                                var newSteps = steps;
+                                var newSteps = new List<string>(steps);
                                 newSteps.AddRange(subchordsSteps);
                                 newSteps = SortChordSteps(newSteps);
                                 var newName = GetChordName(newSteps, newSteps[0]);
@@ -921,8 +916,10 @@ namespace HarmonyAnalyser
                             foreignNote = true;
                     }
 
+                    // Stały bas — akord zostaje w całości
                     if (!isBassDifferent)
                         chords[i].BassNote = subchords[0].BassNote;
+                    // Zmienny bas — następuje podział na odrębne akordy
                     else if (isBassDifferent && foreignNote)
                     {
                         var newChords = new List<Chord>();
