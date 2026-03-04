@@ -10,14 +10,14 @@ Projekt został opracowany w ramach pracy inżynierskiej.
 
 ### Wymagania
 
-Przed uruchomieniem programu należy zainstalować czcionkę muzyczną **Bravura** znajdującą się w katalogu  
+Przed uruchomieniem programu należy zainstalować czcionkę muzyczną **Bravura** znajdującą się w katalogu:  
 `HarmonyAnalyser/fonts/Bravura`.
 
 Czcionka jest zgodna ze standardem **SMuFL (Standard Music Font Layout)** i umożliwia poprawne wyświetlanie symboli notacji muzycznej.
 
 ### Przykładowe pliki
 
-Przykładowe pliki MusicXML do analizy znajdują się w katalogu  
+Przykładowe pliki MusicXML do analizy znajdują się w katalogu:  
 `HarmonyAnalyser/samples`.
 
 ---
@@ -32,12 +32,12 @@ This project was developed as part of an engineering thesis.
 
 ### Requirements
 
-Before running the program, install the **Bravura** music font located in  
+Before running the program, install the **Bravura** music font located in:  
 `HarmonyAnalyser/fonts/Bravura`.
 
 The font follows the **SMuFL (Standard Music Font Layout)** specification and is required for correct rendering of musical notation symbols.
 
 ### Sample files
 
-Example MusicXML files for analysis can be found in  
+Example MusicXML files for analysis can be found in:  
 `HarmonyAnalyser/samples`.
