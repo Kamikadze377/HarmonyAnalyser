@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32319.34
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HarmonyAnalyser", "..\HarmonyAnalyser\HarmonyAnalyser.csproj", "{2A1BABDB-B64B-4B23-9E78-887E1FB0FE68}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HarmonyAnalyser.Tests", "HarmonyAnalyser.Tests.csproj", "{5741AF23-8992-464B-AC10-F4378D2DDBF4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2A1BABDB-B64B-4B23-9E78-887E1FB0FE68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A1BABDB-B64B-4B23-9E78-887E1FB0FE68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A1BABDB-B64B-4B23-9E78-887E1FB0FE68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A1BABDB-B64B-4B23-9E78-887E1FB0FE68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5741AF23-8992-464B-AC10-F4378D2DDBF4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5741AF23-8992-464B-AC10-F4378D2DDBF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5741AF23-8992-464B-AC10-F4378D2DDBF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5741AF23-8992-464B-AC10-F4378D2DDBF4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4861AC71-2321-499A-B01A-A461F85FE595}
+	EndGlobalSection
+EndGlobal
